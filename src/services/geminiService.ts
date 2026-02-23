@@ -1,12 +1,25 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Order, InventoryItem } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+let aiInstance: GoogleGenAI | null = null;
+
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not defined. Please set it in your environment variables.");
+  }
+  if (!aiInstance) {
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 export const generateCEOInsights = async (orders: Order[], inventory: InventoryItem[]) => {
   const model = "gemini-3-flash-preview";
   
-  const prompt = `
+  try {
+    const ai = getAI();
+    const prompt = `
     Aja como um consultor sênior de gestão para a SK Burgers em Manaus. 
     Analise os seguintes dados e forneça 3 insights estratégicos curtos.
     
@@ -30,7 +43,6 @@ export const generateCEOInsights = async (orders: Order[], inventory: InventoryI
     }
   `;
 
-  try {
     const response = await ai.models.generateContent({
       model,
       contents: [{ parts: [{ text: prompt }] }],
