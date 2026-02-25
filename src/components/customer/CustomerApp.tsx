@@ -4,6 +4,8 @@ import {
 } from 'lucide-react';
 import Menu from './Menu';
 import { StoreConfig } from '../../types';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../services/firebase';
 
 const CustomerApp: React.FC = () => {
   const [showMenu, setShowMenu] = useState(false);
@@ -14,17 +16,21 @@ const CustomerApp: React.FC = () => {
     overloadMode: false,
     aberta: true,
     pixKey: 'pix@skburgers.com',
-    dessertOfferPrice: 5.00,
-    dessertSoloPrice: 12.00,
+    dessertOfferPrice: 12.00,
+    dessertSoloPrice: 15.00,
     addons: []
   });
 
-  // Simulação de busca de config (poderia vir do Firebase)
   useEffect(() => {
-    // Lógica de geolocalização poderia entrar aqui
+    const unsub = onSnapshot(doc(db, 'config', 'store'), (snapshot) => {
+      if (snapshot.exists()) {
+        setStoreConfig(snapshot.data() as StoreConfig);
+      }
+    });
+    return () => unsub();
   }, []);
 
-  if (showMenu) return <Menu onBack={() => setShowMenu(false)} />;
+  if (showMenu) return <Menu onBack={() => setShowMenu(false)} config={storeConfig} />;
 
   return (
     <div className="min-h-screen bg-black pb-32 selection:bg-orange-500/30 font-sans selection:text-white">

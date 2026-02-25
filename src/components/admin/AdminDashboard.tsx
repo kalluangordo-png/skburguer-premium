@@ -146,11 +146,11 @@ const AdminDashboard: React.FC<Props> = ({ orders, config, inventory }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Gráfico de Performance */}
-        <div className="lg:col-span-2 glass p-8 rounded-[3rem] h-[450px]">
+        <div className="lg:col-span-2 glass p-8 rounded-[3rem] min-h-[450px] flex flex-col">
           <h3 className="text-white font-black text-lg uppercase mb-8 italic flex items-center gap-2">
             <ShieldCheck size={20} className="text-orange-500" /> Comparativo de Performance
           </h3>
-          <div className="h-[300px] w-full">
+          <div className="w-full h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />

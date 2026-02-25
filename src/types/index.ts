@@ -37,6 +37,7 @@ export interface StoreConfig {
   adminPassword?: string;
   kitchenPassword?: string;
   addons: { name: string; price: number }[];
+  categories?: string[];
 }
 
 

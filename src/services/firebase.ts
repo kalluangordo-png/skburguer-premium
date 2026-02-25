@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { getAnalytics } from 'firebase/analytics';
 import { 
   getFirestore, 
   initializeFirestore, 
@@ -18,6 +19,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 // Resiliência Manaus: Ativar experimentalForceLongPolling e persistentLocalCache
 export const db = initializeFirestore(app, {

@@ -99,7 +99,13 @@ const SmartUpsell: React.FC<SmartUpsellProps> = ({ cart, allProducts, onAdd }) =
 
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 bg-zinc-800 rounded-2xl overflow-hidden shrink-0 border border-white/5">
-          <img src={suggestion.image} className="w-full h-full object-cover" alt={suggestion.name} referrerPolicy="no-referrer" />
+          {suggestion.image ? (
+            <img src={suggestion.image} className="w-full h-full object-cover" alt={suggestion.name} referrerPolicy="no-referrer" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-zinc-700">
+              <Sparkles size={20} />
+            </div>
+          )}
         </div>
         <div className="flex-1">
           <h5 className="text-white font-black uppercase text-xs italic">{suggestion.name}</h5>

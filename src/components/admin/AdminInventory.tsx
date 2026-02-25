@@ -114,7 +114,7 @@ const AdminInventory: React.FC<Props> = ({ inventory, products, onSave, onUpdate
                            <div className="w-px h-8 bg-white/10"></div>
                            <input 
                               type="number" 
-                              value={item.physicalCount ?? item.quantity}
+                              value={item.physicalCount ?? item.quantity ?? 0}
                               onChange={(e) => handleUpdatePhysicalCount(item.id, parseFloat(e.target.value))}
                               className="w-20 bg-black/40 border border-white/10 rounded-xl p-2 text-center text-xs font-black text-orange-500 outline-none focus:border-orange-500"
                            />
@@ -183,23 +183,23 @@ const AdminInventory: React.FC<Props> = ({ inventory, products, onSave, onUpdate
                 <form onSubmit={handleFormSubmit} className="p-10 space-y-6">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Descrição</label>
-                        <input type="text" value={editingItem?.name} onChange={e => setEditingItem({...editingItem, name: e.target.value})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-white font-bold focus:border-orange-500 outline-none uppercase" placeholder="EX: PÃO BRIOCHE" required />
+                        <input type="text" value={editingItem?.name ?? ''} onChange={e => setEditingItem({...editingItem, name: e.target.value})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-white font-bold focus:border-orange-500 outline-none uppercase" placeholder="EX: PÃO BRIOCHE" required />
                     </div>
                     <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Unidade</label>
-                            <input type="text" value={editingItem?.unit} onChange={e => setEditingItem({...editingItem, unit: e.target.value})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-white font-bold focus:border-orange-500 outline-none uppercase" placeholder="KG, UN, G" required />
+                            <input type="text" value={editingItem?.unit ?? ''} onChange={e => setEditingItem({...editingItem, unit: e.target.value})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-white font-bold focus:border-orange-500 outline-none uppercase" placeholder="KG, UN, G" required />
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Mínimo</label>
-                            <input type="number" value={editingItem?.minQuantity} onChange={e => setEditingItem({...editingItem, minQuantity: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-white font-bold focus:border-orange-500 outline-none" required />
+                            <input type="number" value={editingItem?.minQuantity ?? 0} onChange={e => setEditingItem({...editingItem, minQuantity: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-5 text-white font-bold focus:border-orange-500 outline-none" required />
                         </div>
                     </div>
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Preço de Custo (R$)</label>
                         <div className="relative">
                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-                            <input type="number" step="0.01" value={editingItem?.costPrice} onChange={e => setEditingItem({...editingItem, costPrice: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-5 pl-12 pr-6 text-white font-bold focus:border-orange-500 outline-none" required />
+                            <input type="number" step="0.01" value={editingItem?.costPrice ?? 0} onChange={e => setEditingItem({...editingItem, costPrice: Number(e.target.value)})} className="w-full bg-zinc-900 border border-white/5 rounded-2xl py-5 pl-12 pr-6 text-white font-bold focus:border-orange-500 outline-none" required />
                         </div>
                     </div>
                     <button type="submit" className="w-full bg-orange-500 text-black font-black py-6 rounded-2xl uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all mt-4 shadow-lg shadow-orange-500/20">

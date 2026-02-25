@@ -1,27 +1,72 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShoppingCart, Plus, Search, ChevronRight, ArrowLeft, 
   MapPinned, Loader2, Smartphone, CreditCard, Banknote, 
-  CheckCircle2, X, Minus, Trash2
+  CheckCircle2, X, Minus, Trash2, Flame, Utensils
 } from 'lucide-react';
 import { useToast } from '../ToastContext';
 import { formatCurrency, calculateDistance } from '../../utils';
-import { PaymentMethod, OrderStatus, Product } from '../../types';
+import { PaymentMethod, OrderStatus, Product, StoreConfig } from '../../types';
 import { LOJA_COORDS, MAX_DELIVERY_RADIUS_KM, PAYMENT_ADJUSTMENTS } from '../../constants';
-import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import SmartUpsell from './SmartUpsell';
+import CartUpsell from './CartUpsell';
 
 interface MenuProps {
   onBack: () => void;
+  config: StoreConfig;
 }
 
-const categories = ['Burgers', 'Combos', 'Bebidas', 'Acompanhamentos'];
+const Menu: React.FC<MenuProps> = ({ onBack, config }) => {
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
-const Menu: React.FC<MenuProps> = ({ onBack }) => {
-  const [activeCategory, setActiveCategory] = useState('Burgers');
-  const [cart, setCart] = useState<{ id: string; name: string; price: number; quantity: number; category: string }[]>([]);
+  // Sincronização em tempo real dos produtos
+  useEffect(() => {
+    const q = query(
+      collection(db, 'products'), 
+      where('isPaused', '==', false)
+    );
+    
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const productsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+      setAllProducts(productsData);
+      setLoadingProducts(false);
+    }, (error) => {
+      console.error("Erro ao buscar produtos:", error);
+      setLoadingProducts(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Categorias dinâmicas: União das configuradas + as que existem nos produtos
+  const categories = useMemo(() => {
+    const fixName = (name: string) => {
+      const n = name.toUpperCase().trim();
+      return n === 'CLÁSSICA' ? 'CLÁSSICO' : n;
+    };
+
+    const configCats = (config.categories || []).map(fixName);
+    const productCats = allProducts.map(p => fixName(p.category || '')).filter(Boolean);
+    const combined = Array.from(new Set([...configCats, ...productCats])).filter(Boolean);
+    const finalCats = combined.length > 0 ? combined : ['BURGERS', 'COMBOS', 'BEBIDAS', 'ACOMPANHAMENTOS'];
+    return ['TODOS', ...finalCats];
+  }, [config.categories, allProducts]);
+
+  const [activeCategory, setActiveCategory] = useState('TODOS');
+  const [cart, setCart] = useState<{ 
+    id: string; 
+    name: string; 
+    price: number; 
+    quantity: number; 
+    category: string;
+    isCombo?: boolean;
+    addons?: { name: string; price: number }[];
+  }[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'form' | 'success'>('cart');
   const [isLocating, setIsLocating] = useState(false);
@@ -29,45 +74,122 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.PIX);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastOrderComanda, setLastOrderComanda] = useState('');
+  const [comboItem, setComboItem] = useState<Product | null>(null);
+  const [selectedAddons, setSelectedAddons] = useState<{ name: string; price: number }[]>([]);
   
   const [formData, setFormData] = useState({
     nome: '',
     whatsapp: '',
+    cep: '',
     endereco: '',
+    numeroCasa: '',
     bairro: '',
-    referencia: ''
+    referencia: '',
+    observacao: ''
   });
 
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const handleCepChange = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, '');
+    setFormData(prev => ({ ...prev, cep: cleanCep }));
 
-  useEffect(() => {
-    const fetchProducts = async () => {
+    if (cleanCep.length === 8) {
       try {
-        const q = query(collection(db, 'products'), where('isPaused', '==', false));
-        const querySnapshot = await getDocs(q);
-        const productsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-        setAllProducts(productsData);
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+        
+        if (!data.erro) {
+          // Restrição Geográfica: Foco em Manaus
+          if (data.localidade.toUpperCase() !== 'MANAUS') {
+            showToast("CEP não localizado ou fora da área de atuação (Manaus apenas)", "error");
+            return;
+          }
+
+          setFormData(prev => ({
+            ...prev,
+            endereco: data.logradouro.toUpperCase(),
+            bairro: data.bairro.toUpperCase()
+          }));
+          showToast("Endereço preenchido!", "success");
+        } else {
+          showToast("CEP não encontrado. Preencha manualmente.", "info");
+        }
       } catch (error) {
-        console.error("Error fetching products:", error);
-      } finally {
-        setLoadingProducts(false);
+        showToast("Erro ao buscar CEP.", "error");
       }
-    };
-    fetchProducts();
-  }, []);
+    }
+  };
+
+  // Garantir que temos uma categoria ativa válida
+  useEffect(() => {
+    if (!activeCategory && categories.length > 0) {
+      setActiveCategory('TODOS');
+    }
+  }, [categories, activeCategory]);
+
+  const filteredProducts = useMemo(() => {
+    return allProducts.filter(p => {
+      const pCat = (p.category || '').toUpperCase();
+      const aCat = (activeCategory || 'TODOS').toUpperCase();
+      
+      const matchesCategory = (aCat === 'TODOS' || searchQuery) ? true : pCat === aCat;
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           p.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [allProducts, activeCategory, searchQuery]);
 
   const { showToast } = useToast();
 
-  const addToCart = (product: { id: string; name: string; price: number; category?: string }) => {
+  const addToCart = (product: { 
+    id: string; 
+    name: string; 
+    price: number; 
+    category?: string; 
+    isCombo?: boolean;
+    addons?: { name: string; price: number }[];
+  }) => {
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const addonsJson = JSON.stringify(product.addons || []);
+      const existing = prev.find(item => 
+        item.id === product.id && 
+        item.isCombo === product.isCombo && 
+        JSON.stringify(item.addons || []) === addonsJson
+      );
+      
       if (existing) {
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return prev.map(item => (
+          item.id === product.id && 
+          item.isCombo === product.isCombo && 
+          JSON.stringify(item.addons || []) === addonsJson
+        ) ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { ...product, quantity: 1, category: product.category || '' }];
+      return [...prev, { ...product, quantity: 1, category: product.category || '', isCombo: !!product.isCombo }];
     });
-    showToast(`${product.name} adicionado!`, 'success');
+    
+    // Meta Pixel: Track AddToCart
+    if ((window as any).fbq) {
+      (window as any).fbq('track', 'AddToCart', {
+        content_name: product.name,
+        content_category: product.category,
+        content_ids: [product.id],
+        value: product.price,
+        currency: 'BRL'
+      });
+    }
+
+    showToast(`${product.name} ${product.isCombo ? '(Combo)' : ''} adicionado!`, 'success');
+  };
+
+  const handleAddToCartClick = (product: Product) => {
+    const category = product.category.toLowerCase();
+    const isExcluded = category.includes('bebida') || category.includes('sobremesa') || category.includes('doce');
+    const isAlreadyCombo = product.name.toLowerCase().includes('combo');
+
+    if (!isExcluded && !isAlreadyCombo) {
+      setComboItem(product);
+    } else {
+      addToCart(product);
+    }
   };
 
   const updateQuantity = (id: string, delta: number) => {
@@ -84,8 +206,11 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
   
   const deliveryFee = useMemo(() => {
     if (userDistance === null) return 0;
-    if (userDistance <= 2) return 0; // Grátis até 2km
-    return userDistance * 1.5; // R$ 1,50 por km
+    // Novas Regras de Entrega SK Burgers
+    if (userDistance <= 2) return 5.00;
+    if (userDistance <= 4) return 7.00;
+    if (userDistance <= 5.5) return 9.00;
+    return 0; // Bloqueado via isOutOfRange
   }, [userDistance]);
 
   const paymentAdjustment = useMemo(() => {
@@ -127,18 +252,75 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
     );
   };
 
+  const handleUpgradeToCombo = (itemId: string) => {
+    setCart(prev => prev.map(item => {
+      if (item.id === itemId && !item.isCombo) {
+        return { 
+          ...item, 
+          price: item.price + 12, 
+          isCombo: true 
+        };
+      }
+      return item;
+    }));
+    showToast("Upgrade para Combo realizado! 🍟🥤", "success");
+  };
+
   const handleFinalizeOrder = async () => {
-    if (!formData.nome || !formData.whatsapp || !formData.endereco) {
-      showToast("Preencha todos os campos obrigatórios.", "error");
+    if (!formData.nome || !formData.whatsapp || !formData.cep || !formData.endereco) {
+      showToast("Preencha todos os campos obrigatórios (Nome, WhatsApp, CEP e Endereço).", "error");
       return;
     }
 
     setIsSubmitting(true);
+    
+    // Timeout de segurança para não travar o botão
+    const timeout = setTimeout(() => {
+      if (isSubmitting) {
+        setIsSubmitting(false);
+        showToast("Tempo de resposta excedido. Tente novamente.", "error");
+      }
+    }, 15000);
+
     try {
       const comanda = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      // Inteligência Fiscal: Separação de itens para ST (Substituição Tributária) no Admin
+      const processedItens = cart.flatMap(i => {
+        if (i.isCombo) {
+          return [
+            { 
+              id: i.id, 
+              name: i.name.toUpperCase(), 
+              qtd: i.quantity, 
+              price: i.price - 12,
+              isComboPart: true,
+              addons: i.addons 
+            },
+            {
+              id: `upgrade_${i.id}`,
+              name: 'UPGRADE COMBO (BATATA + REFRI)',
+              qtd: i.quantity,
+              price: 12,
+              category: 'Acompanhamento',
+              isComboUpgrade: true,
+              hasST: true // Identificador para o AdminSK separar o imposto do Refri
+            }
+          ];
+        }
+        return [{ 
+          id: i.id, 
+          name: i.name.toUpperCase(), 
+          qtd: i.quantity, 
+          price: i.price,
+          isCombo: !!i.isCombo,
+          addons: i.addons
+        }];
+      });
+
       const orderData = {
         numeroComanda: comanda,
-        itens: cart.map(i => ({ ...i, qtd: i.quantity })),
+        itens: processedItens,
         total: finalTotal,
         subtotal,
         taxaEntrega: deliveryFee,
@@ -147,23 +329,41 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
         pagamento: paymentMethod,
         customerName: formData.nome,
         customerPhone: formData.whatsapp,
-        address: formData.endereco,
+        address: `${formData.endereco}, ${formData.numeroCasa} - ${formData.bairro} (CEP: ${formData.cep})`,
         cliente: {
           nome: formData.nome,
           whatsapp: formData.whatsapp,
           endereco: formData.endereco,
-          bairro: formData.bairro
+          numeroCasa: formData.numeroCasa,
+          cep: formData.cep,
+          bairro: formData.bairro,
+          referencia: formData.referencia,
+          observacao: formData.observacao
         },
         createdAt: Date.now(),
         dataCriacao: serverTimestamp()
       };
 
       await addDoc(collection(db, 'pedidos'), orderData);
+      
+      // Meta Pixel: Track Purchase
+      if ((window as any).fbq) {
+        (window as any).fbq('track', 'Purchase', {
+          value: finalTotal,
+          currency: 'BRL',
+          content_ids: cart.map(i => i.id),
+          content_type: 'product'
+        });
+      }
+
+      clearTimeout(timeout);
       setLastOrderComanda(comanda);
       setCheckoutStep('success');
       setCart([]);
-    } catch (error) {
-      showToast("Erro ao enviar pedido.", "error");
+    } catch (error: any) {
+      clearTimeout(timeout);
+      console.error("Erro ao salvar pedido:", error);
+      showToast(`Erro: ${error.message || "Falha ao enviar"}`, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -217,8 +417,15 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
           <input 
             type="text" 
             placeholder="O que você quer comer hoje?" 
-            className="bg-transparent border-none outline-none text-sm w-full text-white"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-transparent border-none outline-none text-sm w-full text-white placeholder:text-zinc-700"
           />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')}>
+              <X size={14} className="text-zinc-500" />
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-4">
@@ -227,10 +434,13 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
               <Loader2 className="animate-spin text-orange-500" size={32} />
               <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Aquecendo a chapa...</p>
             </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-20 opacity-30">
+              <Search size={40} className="mx-auto mb-4" />
+              <p className="text-[10px] font-black uppercase tracking-widest">Nenhum item encontrado</p>
+            </div>
           ) : (
-            allProducts
-              .filter(p => p.category === activeCategory)
-              .map((p, index) => (
+            filteredProducts.map((p, index) => (
                 <motion.div 
                   key={p.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -238,14 +448,20 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
                   transition={{ delay: index * 0.05 }}
                   className="glass-card flex gap-4 !p-3 group"
                 >
-                  <div className="w-24 h-24 bg-zinc-800 rounded-xl overflow-hidden flex-shrink-0">
-                    <img 
-                      src={p.image} 
-                      alt={p.name} 
-                      className="w-full h-full object-cover brightness-90 group-hover:brightness-110 group-hover:scale-105 transition-all duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
+                    <div className="w-24 h-24 bg-zinc-800 rounded-xl overflow-hidden flex-shrink-0">
+                      {p.image ? (
+                        <img 
+                          src={p.image} 
+                          alt={p.name} 
+                          className="w-full h-full object-cover brightness-90 group-hover:brightness-110 group-hover:scale-105 transition-all duration-500"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                          <Utensils size={32} />
+                        </div>
+                      )}
+                    </div>
                   <div className="flex flex-col justify-between flex-1">
                     <div>
                       <h3 className="font-bold text-white uppercase italic text-sm">{p.name}</h3>
@@ -256,7 +472,7 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
                     <div className="flex justify-between items-center mt-2">
                       <span className="text-orange-500 font-black">{formatCurrency(p.price)}</span>
                       <button 
-                        onClick={() => addToCart(p)}
+                        onClick={() => handleAddToCartClick(p)}
                         className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white active:scale-90 transition-transform"
                       >
                         <Plus className="w-5 h-5" />
@@ -305,10 +521,25 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
                       {cart.map(item => (
                         <div key={item.id} className="bg-zinc-900/50 border border-white/5 p-4 rounded-3xl flex items-center gap-4">
                           <div className="w-16 h-16 bg-zinc-800 rounded-2xl overflow-hidden">
-                            <img src={allProducts.find(p => p.id === item.id)?.image || `https://picsum.photos/seed/${item.id}/100/100`} className="w-full h-full object-cover" alt={item.name} referrerPolicy="no-referrer" />
+                            {allProducts.find(p => p.id === item.id)?.image ? (
+                              <img src={allProducts.find(p => p.id === item.id)?.image} className="w-full h-full object-cover" alt={item.name} referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                                <Utensils size={20} />
+                              </div>
+                            )}
                           </div>
                           <div className="flex-1">
                             <h4 className="text-white font-black uppercase text-xs italic">{item.name}</h4>
+                            {item.addons && item.addons.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.addons.map((a, i) => (
+                                  <span key={i} className="text-[8px] bg-orange-500/10 text-orange-500 px-1.5 py-0.5 rounded border border-orange-500/20 uppercase font-black">
+                                    + {a.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             <p className="text-orange-500 font-black text-sm mt-1">{formatCurrency(item.price)}</p>
                           </div>
                           <div className="flex items-center gap-3 bg-black/40 p-1 rounded-xl border border-white/5">
@@ -322,6 +553,14 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
                           </div>
                         </div>
                       ))}
+
+                      <CartUpsell 
+                        cart={cart} 
+                        allProducts={allProducts} 
+                        config={config}
+                        onAdd={addToCart}
+                        onUpgrade={handleUpgradeToCombo}
+                      />
 
                       <SmartUpsell 
                         cart={cart} 
@@ -339,19 +578,34 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
                     <h3 className="text-xs font-black text-zinc-500 uppercase tracking-widest">Informações de Entrega</h3>
                     <div className="space-y-3">
                       <input 
-                        placeholder="SEU NOME COMPLETO"
+                        placeholder="SEU NOME COMPLETO (OBRIGATÓRIO)"
                         value={formData.nome}
                         onChange={e => setFormData({...formData, nome: e.target.value.toUpperCase()})}
                         className="w-full bg-zinc-900 border border-white/5 p-5 rounded-2xl text-white font-black text-xs outline-none focus:border-orange-500 transition-all"
                       />
                       <input 
-                        placeholder="WHATSAPP (DDD + NÚMERO)"
+                        placeholder="WHATSAPP (DDD + NÚMERO) (OBRIGATÓRIO)"
                         value={formData.whatsapp}
                         onChange={e => setFormData({...formData, whatsapp: e.target.value})}
                         className="w-full bg-zinc-900 border border-white/5 p-5 rounded-2xl text-white font-black text-xs outline-none focus:border-orange-500 transition-all"
                       />
+                      <div className="grid grid-cols-2 gap-3">
+                        <input 
+                          placeholder="CEP (OBRIGATÓRIO)"
+                          value={formData.cep}
+                          onChange={e => handleCepChange(e.target.value)}
+                          maxLength={8}
+                          className="w-full bg-zinc-900 border border-white/5 p-5 rounded-2xl text-white font-black text-xs outline-none focus:border-orange-500 transition-all"
+                        />
+                        <input 
+                          placeholder="Nº DA CASA"
+                          value={formData.numeroCasa}
+                          onChange={e => setFormData({...formData, numeroCasa: e.target.value.toUpperCase()})}
+                          className="w-full bg-zinc-900 border border-white/5 p-5 rounded-2xl text-white font-black text-xs outline-none focus:border-orange-500 transition-all"
+                        />
+                      </div>
                       <input 
-                        placeholder="ENDEREÇO E NÚMERO"
+                        placeholder="RUA / LOGRADOURO"
                         value={formData.endereco}
                         onChange={e => setFormData({...formData, endereco: e.target.value.toUpperCase()})}
                         className="w-full bg-zinc-900 border border-white/5 p-5 rounded-2xl text-white font-black text-xs outline-none focus:border-orange-500 transition-all"
@@ -370,6 +624,12 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
                           className="w-full bg-zinc-900 border border-white/5 p-5 rounded-2xl text-white font-black text-xs outline-none focus:border-orange-500 transition-all"
                         />
                       </div>
+                      <textarea 
+                        placeholder="OBSERVAÇÕES (EX: PONTO DE REFERÊNCIA, SE O CEP DEU ERRADO DESCREVA AQUI)"
+                        value={formData.observacao}
+                        onChange={e => setFormData({...formData, observacao: e.target.value.toUpperCase()})}
+                        className="w-full bg-zinc-900 border border-white/5 p-5 rounded-2xl text-white font-black text-xs outline-none focus:border-orange-500 transition-all h-24 resize-none"
+                      />
                     </div>
                     
                     <button 
@@ -383,7 +643,7 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
                     
                     {isOutOfRange && (
                       <p className="text-[10px] font-black text-red-500 uppercase text-center animate-bounce">
-                        ⚠️ Ops! Você está a {userDistance?.toFixed(1)}km. Atendemos apenas até {MAX_DELIVERY_RADIUS_KM}km.
+                        ⚠️ Desculpe, seu endereço está fora da nossa área de entrega (máx. {MAX_DELIVERY_RADIUS_KM}km).
                       </p>
                     )}
                   </div>
@@ -494,6 +754,109 @@ const Menu: React.FC<MenuProps> = ({ onBack }) => {
               </footer>
             )}
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL DE COMBO E ADICIONAIS */}
+      <AnimatePresence>
+        {comboItem && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-zinc-900 border border-white/10 rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl my-auto"
+            >
+              <div className="p-6 space-y-6">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                      <Flame size={20} className="text-orange-500" />
+                    </div>
+                    <h3 className="text-lg font-black text-white uppercase italic tracking-tighter">Personalizar</h3>
+                  </div>
+                  <button onClick={() => { setComboItem(null); setSelectedAddons([]); }} className="text-zinc-500">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest mb-3">Adicionais</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {config.addons?.map((addon, idx) => {
+                        const isSelected = selectedAddons.some(a => a.name === addon.name);
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedAddons(prev => prev.filter(a => a.name !== addon.name));
+                              } else {
+                                setSelectedAddons(prev => [...prev, addon]);
+                              }
+                            }}
+                            className={`p-3 rounded-2xl border text-left transition-all ${
+                              isSelected 
+                              ? 'bg-orange-500 border-orange-500 text-black' 
+                              : 'bg-zinc-800 border-white/5 text-zinc-400'
+                            }`}
+                          >
+                            <p className="text-[10px] font-black uppercase leading-none">{addon.name}</p>
+                            <p className={`text-[9px] font-bold mt-1 ${isSelected ? 'text-black/60' : 'text-orange-500'}`}>
+                              + {formatCurrency(addon.price)}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5">
+                    <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest mb-3">Combo</p>
+                    <div className="bg-zinc-800/50 p-4 rounded-3xl border border-white/5">
+                      <p className="text-xs font-bold text-white uppercase italic">Transformar em Combo?</p>
+                      <p className="text-[10px] text-zinc-500 mt-1">Batata + Bebida por <span className="text-orange-500 font-black">+ R$ 12,00</span></p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3 pt-2">
+                  <button 
+                    onClick={() => {
+                      const addonTotal = selectedAddons.reduce((acc, a) => acc + a.price, 0);
+                      addToCart({ 
+                        ...comboItem, 
+                        price: comboItem.price + 12 + addonTotal, 
+                        isCombo: true,
+                        addons: selectedAddons
+                      });
+                      setComboItem(null);
+                      setSelectedAddons([]);
+                    }}
+                    className="w-full bg-orange-500 text-black py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-orange-400 transition-all shadow-lg shadow-orange-500/20"
+                  >
+                    COMBO + ADICIONAIS
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const addonTotal = selectedAddons.reduce((acc, a) => acc + a.price, 0);
+                      addToCart({ 
+                        ...comboItem, 
+                        price: comboItem.price + addonTotal,
+                        addons: selectedAddons
+                      });
+                      setComboItem(null);
+                      setSelectedAddons([]);
+                    }}
+                    className="w-full bg-zinc-100 text-black py-4 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white transition-all"
+                  >
+                    SÓ O BURGER {selectedAddons.length > 0 && '+ ADICIONAIS'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

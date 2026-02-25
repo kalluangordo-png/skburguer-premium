@@ -37,7 +37,28 @@ export const seedInitialData = async () => {
 
   products.forEach(product => {
     const ref = doc(db, 'products', product.id);
-    batch.set(ref, product);
+    batch.set(ref, { ...product, isPaused: false });
+  });
+
+  // Initial Config
+  const configRef = doc(db, 'config', 'store');
+  batch.set(configRef, {
+    dailyGoal: 400,
+    whatsappNumber: '5592999999999',
+    rainMode: false,
+    overloadMode: false,
+    aberta: true,
+    pixKey: 'pix@skburgers.com',
+    dessertOfferPrice: 5.00,
+    dessertSoloPrice: 12.00,
+    adminPassword: '1214',
+    kitchenPassword: '1234',
+    categories: ['Burgers', 'Combos', 'Bebidas', 'Acompanhamentos', 'Sobremesas'],
+    addons: [
+      { name: 'BACON EXTRA', price: 5.00 },
+      { name: 'CARNE EXTRA', price: 12.00 },
+      { name: 'QUEIJO EXTRA', price: 4.00 }
+    ]
   });
 
   await batch.commit();

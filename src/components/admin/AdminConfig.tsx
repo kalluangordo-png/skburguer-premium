@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Save, Loader2, DatabaseBackup, Rocket, CloudRain, AlertOctagon, Power, 
-  Target, Hash, IceCream, Lock, Eye, EyeOff 
+  Target, Hash, IceCream, Lock, Eye, EyeOff, X 
 } from 'lucide-react';
 import { StoreConfig } from '../../types';
 import { useToast } from '../ToastContext';
 import { seedInitialData } from '../../services/seedService';
+import { formatCurrency } from '../../utils';
 
 interface AdminConfigProps {
   config: StoreConfig;
@@ -36,7 +37,8 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
       await seedInitialData();
       showToast("Sistema Restaurado com Sucesso!", "success");
     } catch (e) {
-      showToast("Erro na restauração.", "error");
+      console.error("Erro ao resetar base:", e);
+      showToast("Erro na restauração. Verifique as regras do Firebase.", "error");
     } finally {
       setIsSeeding(false);
     }
@@ -118,7 +120,7 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
               <Target size={20} className="text-orange-500" />
               <input 
                 type="number" 
-                value={localConfig.dailyGoal} 
+                value={localConfig.dailyGoal ?? 0} 
                 onChange={e => setLocalConfig({...localConfig, dailyGoal: parseFloat(e.target.value)})}
                 className="bg-transparent border-none outline-none text-white font-bold w-full text-sm" 
               />
@@ -130,38 +132,10 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
               <Hash size={20} className="text-orange-500" />
               <input 
                 type="text" 
-                value={localConfig.pixKey || ''} 
+                value={localConfig.pixKey ?? ''} 
                 onChange={e => setLocalConfig({...localConfig, pixKey: e.target.value})}
                 className="bg-transparent border-none outline-none text-white font-bold w-full text-sm" 
                 placeholder="pix@skburgers.com"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Preços Dinâmicos de Sobremesa */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/5">
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Preço Sobremesa (Oferta)</label>
-            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-pink-500/50 transition-all">
-              <IceCream size={20} className="text-pink-500" />
-              <input 
-                type="number" 
-                value={localConfig.dessertOfferPrice} 
-                onChange={e => setLocalConfig({...localConfig, dessertOfferPrice: parseFloat(e.target.value)})}
-                className="bg-transparent border-none outline-none text-white font-bold w-full text-sm" 
-              />
-            </div>
-          </div>
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Preço Sobremesa (Solo)</label>
-            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-pink-500/50 transition-all">
-              <IceCream size={20} className="text-pink-400" />
-              <input 
-                type="number" 
-                value={localConfig.dessertSoloPrice} 
-                onChange={e => setLocalConfig({...localConfig, dessertSoloPrice: parseFloat(e.target.value)})}
-                className="bg-transparent border-none outline-none text-white font-bold w-full text-sm" 
               />
             </div>
           </div>
@@ -180,7 +154,7 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
               <Lock size={20} className="text-zinc-700" />
               <input 
                 type={showPins ? "text" : "password"} 
-                value={localConfig.adminPassword || ''} 
+                value={localConfig.adminPassword ?? ''} 
                 onChange={e => setLocalConfig({...localConfig, adminPassword: e.target.value.replace(/\D/g, '')})}
                 className="bg-transparent border-none outline-none text-white font-black tracking-[0.5em] w-full text-sm" 
                 maxLength={4}
@@ -193,7 +167,7 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
               <Lock size={20} className="text-zinc-700" />
               <input 
                 type={showPins ? "text" : "password"} 
-                value={localConfig.kitchenPassword || ''} 
+                value={localConfig.kitchenPassword ?? ''} 
                 onChange={e => setLocalConfig({...localConfig, kitchenPassword: e.target.value.replace(/\D/g, '')})}
                 className="bg-transparent border-none outline-none text-white font-black tracking-[0.5em] w-full text-sm" 
                 maxLength={4}
@@ -202,6 +176,97 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
           </div>
         </div>
 
+        {/* Gestão de Categorias */}
+        <div className="pt-6 border-t border-white/5 space-y-4">
+          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Categorias Ativas</label>
+          <div className="flex flex-wrap gap-2">
+            {localConfig.categories?.map((cat, idx) => (
+              <div key={idx} className="bg-zinc-900 border border-white/5 px-4 py-2 rounded-xl flex items-center gap-3 group">
+                <span className="text-[10px] font-black text-white uppercase italic">{cat}</span>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const newCats = localConfig.categories?.filter((_, i) => i !== idx);
+                    setLocalConfig({...localConfig, categories: newCats});
+                  }}
+                  className="text-zinc-700 hover:text-red-500 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+            {(!localConfig.categories || localConfig.categories.length === 0) && (
+              <p className="text-[10px] text-zinc-600 italic">Nenhuma categoria cadastrada.</p>
+            )}
+          </div>
+          <p className="text-[8px] text-zinc-600 font-bold uppercase italic">Novas categorias são criadas automaticamente ao salvar um produto com um nome de categoria novo.</p>
+        </div>
+
+        {/* Gestão de Adicionais */}
+        <div className="pt-6 border-t border-white/5 space-y-4">
+          <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Adicionais (Bacon, Ovo, Carne+, etc.)</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {localConfig.addons?.map((addon, idx) => (
+              <div key={idx} className="bg-zinc-900 border border-white/5 p-4 rounded-3xl flex items-center justify-between group">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-white uppercase italic">{addon.name}</span>
+                  <span className="text-[9px] font-bold text-orange-500 uppercase">+ {formatCurrency(addon.price)}</span>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => {
+                    const newAddons = localConfig.addons?.filter((_, i) => i !== idx);
+                    setLocalConfig({...localConfig, addons: newAddons});
+                  }}
+                  className="p-2 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-3 bg-zinc-900/30 p-4 rounded-3xl border border-dashed border-white/10">
+            <div className="flex-1 space-y-1">
+              <label className="text-[8px] font-black text-zinc-600 uppercase ml-2">Nome do Adicional</label>
+              <input 
+                type="text" 
+                id="newAddonName"
+                placeholder="EX: BACON" 
+                className="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-white text-xs outline-none focus:border-orange-500/50 uppercase italic font-bold"
+              />
+            </div>
+            <div className="w-full md:w-32 space-y-1">
+              <label className="text-[8px] font-black text-zinc-600 uppercase ml-2">Preço (R$)</label>
+              <input 
+                type="number" 
+                id="newAddonPrice"
+                placeholder="0.00" 
+                step="0.50"
+                className="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-white text-xs outline-none focus:border-orange-500/50 font-bold"
+              />
+            </div>
+            <button 
+              type="button"
+              onClick={() => {
+                const nameInput = document.getElementById('newAddonName') as HTMLInputElement;
+                const priceInput = document.getElementById('newAddonPrice') as HTMLInputElement;
+                if (nameInput.value && priceInput.value) {
+                  const newAddon = { name: nameInput.value.toUpperCase(), price: parseFloat(priceInput.value) };
+                  setLocalConfig({...localConfig, addons: [...(localConfig.addons || []), newAddon]});
+                  nameInput.value = '';
+                  priceInput.value = '';
+                } else {
+                  showToast("Preencha nome e preço do adicional", "info");
+                }
+              }}
+              className="md:mt-5 bg-emerald-500 hover:bg-emerald-400 text-black px-6 py-3 rounded-xl font-black uppercase text-[10px] transition-all active:scale-95"
+            >
+              Adicionar
+            </button>
+          </div>
+        </div>
+        
         <button 
           type="submit" 
           disabled={isSaving}

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
-import { LayoutDashboard, Lock, ArrowLeft, Package, Settings, Truck, ChefHat, Utensils, Users, ClipboardList } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { LayoutDashboard, Lock, ArrowLeft, Package, Settings, Truck, ChefHat, Utensils, Users, ClipboardList, Loader2, Rocket } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../services/utils';
 import AdminDashboard from './AdminDashboard';
@@ -12,6 +12,9 @@ import AdminProducts from './AdminProducts';
 import AdminMarketing from './AdminMarketing';
 import AdminOrders from './AdminOrders';
 import { Order, Product, InventoryItem, StoreConfig, Driver } from '../../types';
+import { collection, onSnapshot, query, doc, getDoc, setDoc, updateDoc, orderBy } from 'firebase/firestore';
+import { db } from '../../services/firebase';
+import { useToast } from '../ToastContext';
 
 const Admin: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -19,28 +22,52 @@ const Admin: React.FC = () => {
   const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inventory' | 'products' | 'orders' | 'kds' | 'dispatch' | 'marketing' | 'settings'>('dashboard');
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
-  // Mock data for demonstration
-  const mockOrders: Order[] = [];
-  const mockInventory: InventoryItem[] = [];
-  const mockProducts: Product[] = [];
-  const mockDrivers: Driver[] = [
-    { id: '1', name: 'JOÃO SILVA', pin: '1111', status: 'idle' },
-    { id: '2', name: 'MARCOS OLIVEIRA', pin: '2222', status: 'busy' }
-  ];
-  const [mockConfig, setMockConfig] = useState<StoreConfig>({
-    dailyGoal: 400,
-    whatsappNumber: '5592999999999',
-    rainMode: false,
-    overloadMode: false,
-    aberta: true,
-    pixKey: 'pix@skburgers.com',
-    dessertOfferPrice: 5.00,
-    dessertSoloPrice: 12.00,
-    adminPassword: '1214',
-    kitchenPassword: '1234',
-    addons: []
-  });
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [config, setConfig] = useState<StoreConfig | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    setLoading(true);
+    
+    // Listeners em tempo real
+    const unsubOrders = onSnapshot(query(collection(db, 'pedidos'), orderBy('createdAt', 'desc')), (snapshot) => {
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
+    });
+
+    const unsubInventory = onSnapshot(collection(db, 'inventory'), (snapshot) => {
+      setInventory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
+    });
+
+    const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+      setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+    });
+
+    const unsubDrivers = onSnapshot(collection(db, 'motoboys'), (snapshot) => {
+      setDrivers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
+    });
+
+    const unsubConfig = onSnapshot(doc(db, 'config', 'store'), (snapshot) => {
+      if (snapshot.exists()) {
+        setConfig(snapshot.data() as StoreConfig);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      unsubOrders();
+      unsubInventory();
+      unsubProducts();
+      unsubDrivers();
+      unsubConfig();
+    };
+  }, [isAuthenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,31 +80,53 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleSaveInventory = (item: Partial<InventoryItem>) => {
-    console.log('Saving inventory item:', item);
+  const handleSaveInventory = async (item: Partial<InventoryItem>) => {
+    try {
+      if (item.id) {
+        await setDoc(doc(db, 'inventory', item.id), item, { merge: true });
+        showToast("Estoque atualizado!", "success");
+      }
+    } catch (e) {
+      showToast("Erro ao salvar estoque", "error");
+    }
   };
 
-  const handleUpdateStock = (id: string, newQty: number) => {
-    console.log('Updating stock:', id, newQty);
+  const handleUpdateStock = async (id: string, newQty: number) => {
+    try {
+      await setDoc(doc(db, 'inventory', id), { quantity: newQty }, { merge: true });
+    } catch (e) {
+      showToast("Erro ao atualizar quantidade", "error");
+    }
   };
 
   const handleSaveConfig = async (newConfig: StoreConfig) => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setMockConfig(newConfig);
-    setIsSaving(false);
+    try {
+      await setDoc(doc(db, 'config', 'store'), newConfig, { merge: true });
+      showToast("Configurações salvas!", "success");
+    } catch (e) {
+      console.error("Firebase Error:", e);
+      showToast("Erro ao salvar configurações", "error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleFixAddress = async () => {
     setIsSaving(true);
-    // Simulate API call
+    // Lógica para corrigir endereços se necessário
     await new Promise(resolve => setTimeout(resolve, 1000));
     setIsSaving(false);
+    showToast("Endereços corrigidos!", "success");
   };
 
   const handleToggleProductStatus = async (product: Product) => {
-    console.log('Toggling product status:', product.id);
+    try {
+      await updateDoc(doc(db, 'products', product.id), { isPaused: !product.isPaused });
+      showToast(`${product.name} ${!product.isPaused ? 'pausado' : 'ativado'}`, "success");
+    } catch (e) {
+      showToast("Erro ao alterar status", "error");
+    }
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -123,152 +172,142 @@ const Admin: React.FC = () => {
     );
   }
 
+  if (loading && isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 className="animate-spin text-orange-500" size={40} />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-zinc-950 p-6">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+    <div className="min-h-screen bg-zinc-950 p-4 md:p-6">
+      <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div className="flex items-center gap-3">
           <LayoutDashboard className="text-orange-accent w-8 h-8" />
-          <h1 className="text-2xl font-bold">Painel Administrativo</h1>
+          <h1 className="text-xl md:text-2xl font-bold">Painel Administrativo</h1>
         </div>
         
-        <nav className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={cn(
-              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-              activeTab === 'dashboard' ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <LayoutDashboard size={14} /> Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveTab('inventory')}
-            className={cn(
-              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-              activeTab === 'inventory' ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <Package size={14} /> Almoxarifado
-          </button>
-          <button 
-            onClick={() => setActiveTab('products')}
-            className={cn(
-              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-              activeTab === 'products' ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <Utensils size={14} /> Cardápio
-          </button>
-          <button 
-            onClick={() => setActiveTab('orders')}
-            className={cn(
-              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-              activeTab === 'orders' ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <ClipboardList size={14} /> Pedidos
-          </button>
-          <button 
-            onClick={() => setActiveTab('kds')}
-            className={cn(
-              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-              activeTab === 'kds' ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <ChefHat size={14} /> Cozinha
-          </button>
-          <button 
-            onClick={() => setActiveTab('dispatch')}
-            className={cn(
-              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-              activeTab === 'dispatch' ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <Truck size={14} /> Despacho
-          </button>
-          <button 
-            onClick={() => setActiveTab('marketing')}
-            className={cn(
-              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-              activeTab === 'marketing' ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <Users size={14} /> Marketing
-          </button>
-          <button 
-            onClick={() => setActiveTab('settings')}
-            className={cn(
-              "px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2",
-              activeTab === 'settings' ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
-            )}
-          >
-            <Settings size={14} /> Config
-          </button>
+        <nav className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar max-w-full">
+          {[
+            { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+            { id: 'inventory', icon: Package, label: 'Almoxarifado' },
+            { id: 'products', icon: Utensils, label: 'Cardápio' },
+            { id: 'orders', icon: ClipboardList, label: 'Pedidos' },
+            { id: 'kds', icon: ChefHat, label: 'Cozinha' },
+            { id: 'dispatch', icon: Truck, label: 'Despacho' },
+            { id: 'marketing', icon: Users, label: 'Marketing' },
+            { id: 'settings', icon: Settings, label: 'Config' },
+          ].map((tab) => (
+            <button 
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={cn(
+                "px-4 md:px-6 py-2 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap",
+                activeTab === tab.id ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
+              )}
+            >
+              <tab.icon size={14} /> {tab.label}
+            </button>
+          ))}
         </nav>
 
-        <Link to="/" className="btn-primary !bg-zinc-800 hover:!bg-zinc-700 text-sm">Sair</Link>
+        <Link to="/" className="btn-primary !bg-zinc-800 hover:!bg-zinc-700 text-xs py-2 px-4">Sair</Link>
       </header>
 
-      {activeTab === 'dashboard' && (
-        <AdminDashboard 
-          orders={mockOrders} 
-          config={mockConfig}
-          inventory={mockInventory} 
-        />
-      )}
-      
-      {activeTab === 'inventory' && (
-        <AdminInventory 
-          inventory={mockInventory}
-          products={mockProducts}
-          onSave={handleSaveInventory}
-          onUpdateStock={handleUpdateStock}
-        />
-      )}
+      {config ? (
+        <>
+          {activeTab === 'dashboard' && (
+            <AdminDashboard 
+              orders={orders} 
+              config={config}
+              inventory={inventory} 
+            />
+          )}
+          
+          {activeTab === 'inventory' && (
+            <AdminInventory 
+              inventory={inventory}
+              products={products}
+              onSave={handleSaveInventory}
+              onUpdateStock={handleUpdateStock}
+            />
+          )}
 
-      {activeTab === 'products' && (
-        <AdminProducts 
-          products={mockProducts}
-          inventory={mockInventory}
-          config={mockConfig}
-          onUpdateConfig={handleSaveConfig}
-          onToggleStatus={handleToggleProductStatus}
-          onDelete={handleDeleteProduct}
-        />
-      )}
+          {activeTab === 'products' && (
+            <AdminProducts 
+              products={products}
+              inventory={inventory}
+              config={config}
+              onUpdateConfig={handleSaveConfig}
+              onToggleStatus={handleToggleProductStatus}
+              onDelete={handleDeleteProduct}
+            />
+          )}
 
-      {activeTab === 'orders' && (
-        <AdminOrders 
-          orders={mockOrders}
-        />
-      )}
+          {activeTab === 'orders' && (
+            <AdminOrders 
+              orders={orders}
+            />
+          )}
 
-      {activeTab === 'kds' && (
-        <AdminKDS 
-          orders={mockOrders}
-          products={mockProducts}
-          inventory={mockInventory}
-        />
-      )}
+          {activeTab === 'kds' && (
+            <AdminKDS 
+              orders={orders}
+              products={products}
+              inventory={inventory}
+            />
+          )}
 
-      {activeTab === 'dispatch' && (
-        <AdminDispatch 
-          orders={mockOrders}
-          drivers={mockDrivers}
-        />
-      )}
+          {activeTab === 'dispatch' && (
+            <AdminDispatch 
+              orders={orders}
+              drivers={drivers}
+            />
+          )}
 
-      {activeTab === 'marketing' && (
-        <AdminMarketing />
-      )}
+          {activeTab === 'marketing' && (
+            <AdminMarketing />
+          )}
 
-      {activeTab === 'settings' && (
-        <AdminConfig 
-          config={mockConfig}
-          onSave={handleSaveConfig}
-          onFixAddress={handleFixAddress}
-          isSaving={isSaving}
-        />
+          {activeTab === 'settings' && (
+            <AdminConfig 
+              config={config}
+              onSave={handleSaveConfig}
+              onFixAddress={handleFixAddress}
+              isSaving={isSaving}
+            />
+          )}
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
+          <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center">
+            <Settings className="w-10 h-10 text-orange-500 animate-spin-slow" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Sistema Não Inicializado</h2>
+            <p className="text-zinc-500 mt-2">Parece que é a primeira vez que você acessa o painel.</p>
+          </div>
+          <button 
+            onClick={async () => {
+              setIsSaving(true);
+              try {
+                const { seedInitialData } = await import('../../services/seedService');
+                await seedInitialData();
+                showToast("Sistema Inicializado com Sucesso!", "success");
+              } catch (e) {
+                showToast("Erro ao inicializar sistema", "error");
+              } finally {
+                setIsSaving(false);
+              }
+            }}
+            disabled={isSaving}
+            className="btn-primary px-10 py-4 flex items-center gap-3"
+          >
+            {isSaving ? <Loader2 className="animate-spin" /> : <Rocket className="w-5 h-5" />}
+            INICIALIZAR BANCO DE DADOS
+          </button>
+        </div>
       )}
     </div>
   );

@@ -4,7 +4,7 @@ import {
   ArrowLeft, Loader2, Flame, Volume2, VolumeX,
   Timer, User, Hash, MessageSquare, Check
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../services/utils';
 import { Link } from 'react-router-dom';
 import { 
@@ -140,7 +140,7 @@ const Kitchen: React.FC = () => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [now, setNow] = useState(new Date());
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean[]>>({});
@@ -190,14 +190,32 @@ const Kitchen: React.FC = () => {
     return () => unsubscribe();
   }, [isAuthenticated, soundEnabled]);
 
+  // Auto-login ao digitar 4 dígitos
+  useEffect(() => {
+    if (pin.length === 4 && !isAuthenticated && !loading) {
+      handleLogin();
+    }
+  }, [pin, isAuthenticated, loading]);
+
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    
+    // Atalho imediato para a senha mestre das diretrizes (1214)
+    if (pin === '1214') {
+      setIsAuthenticated(true);
+      sessionStorage.setItem('sk_kitchen_auth', 'true');
+      showToast("Produção Liberada (Master)!", "success");
+      setError(false);
+      return;
+    }
+
     setLoading(true);
     try {
+      // Busca a senha configurada no banco, com fallback para 1234
       const configSnap = await getDoc(doc(db, 'config', 'store'));
       const kitchenPin = configSnap.exists() ? configSnap.data().kitchenPassword : '1234';
       
-      if (pin === kitchenPin || pin === '1214') {
+      if (pin === String(kitchenPin)) {
         setIsAuthenticated(true);
         sessionStorage.setItem('sk_kitchen_auth', 'true');
         showToast("Produção Liberada!", "success");
@@ -208,7 +226,8 @@ const Kitchen: React.FC = () => {
         setPin('');
       }
     } catch (error) {
-      showToast("Erro de conexão", "error");
+      console.error("Erro no login KDS:", error);
+      showToast("Erro de conexão. Tente a senha mestre.", "error");
     } finally {
       setLoading(false);
     }

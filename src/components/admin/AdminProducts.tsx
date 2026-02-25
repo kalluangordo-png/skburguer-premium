@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Plus, Edit3, Power, Trash2, Save, X, ChefHat, Image as ImageIcon, 
-  DollarSign, Info, AlertCircle, Loader2
+  DollarSign, Info, AlertCircle, Loader2, Sparkles
 } from 'lucide-react';
 import { 
   collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp 
@@ -30,6 +30,9 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
   products, inventory, config, onUpdateConfig, onToggleStatus, onDelete 
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [newTopicName, setNewTopicName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingConfig, setIsSavingConfig] = useState(false);
@@ -69,14 +72,14 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
   const openEditModal = (product: Product) => {
     setEditingId(product.id);
     setFormData({
-      name: product.name,
-      price: product.price,
+      name: product.name || '',
+      price: product.price || 0,
       priceCombo: product.priceCombo || null,
-      description: product.description,
-      category: product.category,
-      stock: product.stock,
-      image: product.image,
-      recipe: product.recipe || []
+      description: product.description || '',
+      category: product.category || 'Burgers',
+      stock: product.stock || 0,
+      image: product.image || '',
+      recipe: Array.isArray(product.recipe) ? product.recipe : []
     });
     setIsModalOpen(true);
   };
@@ -87,16 +90,30 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
     
     setIsSubmitting(true);
     try {
-      const calculatedCmv = formData.recipe.reduce((acc, ing) => {
+      const recipe = Array.isArray(formData.recipe) ? formData.recipe : [];
+      const calculatedCmv = recipe.reduce((acc, ing) => {
         const item = inventory.find(i => i.id === ing.id);
-        return acc + (ing.qty * (item?.costPrice || 0));
+        return acc + (Number(ing.qty || 0) * (item?.costPrice || 0));
       }, 0);
 
+      const category = formData.category.trim().toUpperCase();
+      const currentCategories = (config.categories || []).map(c => c.toUpperCase().trim());
+      
+      // Se a categoria for nova, atualiza o config
+      if (category && !currentCategories.includes(category)) {
+        const newCategories = Array.from(new Set([...currentCategories, category]));
+        await onUpdateConfig({ ...config, categories: newCategories });
+      }
+
       const payload = { 
-        ...formData, 
-        name: formData.name.toUpperCase(), 
+        name: formData.name.toUpperCase().trim(), 
         price: Number(formData.price), 
         priceCombo: formData.priceCombo ? Number(formData.priceCombo) : null, 
+        description: formData.description || '',
+        category: category,
+        stock: Number(formData.stock || 0),
+        image: formData.image || '',
+        recipe: recipe,
         cmv: calculatedCmv || 0,
         updatedAt: serverTimestamp() 
       };
@@ -114,6 +131,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
       }
       setIsModalOpen(false);
     } catch (err) { 
+      console.error("Erro ao salvar produto:", err);
       showToast("Erro ao salvar. Verifique a conexão.", "error"); 
     } finally { 
       setIsSubmitting(false); 
@@ -124,13 +142,84 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
     setIsSavingConfig(true);
     try {
       await onUpdateConfig(localConfig);
-      showToast("Estratégia de Upsell salva!", "success");
+      showToast("Configurações salvas!", "success");
     } catch (err) {
       showToast("Erro ao salvar configuração.", "error");
     } finally {
       setIsSavingConfig(false);
     }
   };
+
+  const handleAddTopic = async () => {
+    if (!newTopicName) return;
+    const topic = newTopicName.trim().toUpperCase();
+    const currentCategories = (config.categories || []).map(c => c.toUpperCase().trim());
+    
+    if (currentCategories.includes(topic)) {
+      showToast("Este tópico já existe!", "error");
+      return;
+    }
+    
+    const newCategories = Array.from(new Set([...currentCategories, topic]));
+    try {
+      await onUpdateConfig({ ...config, categories: newCategories });
+      setNewTopicName('');
+      showToast("Tópico criado com sucesso!", "success");
+    } catch (e) {
+      showToast("Erro ao criar tópico", "error");
+    }
+  };
+
+  const handleRemoveTopic = async (topic: string) => {
+    if (!window.confirm(`Deseja remover o tópico "${topic}"? Produtos vinculados a ele continuarão existindo.`)) return;
+    
+    const newCategories = (config.categories || []).filter(c => c !== topic);
+    try {
+      await onUpdateConfig({ ...config, categories: newCategories });
+      showToast("Tópico removido!", "info");
+    } catch (e) {
+      showToast("Erro ao remover tópico", "error");
+    }
+  };
+
+  const handleSyncCategories = async () => {
+    setIsSyncing(true);
+    try {
+      // 1. Coletar todas as categorias dos produtos
+      const productCategories = products.map(p => p.category?.toUpperCase().trim()).filter(Boolean);
+      
+      // 2. Coletar categorias da config e aplicar correção de grafia
+      const configCategories = (config.categories || []).map(c => {
+        let name = c.toUpperCase().trim();
+        if (name === 'CLÁSSICA') return 'CLÁSSICO';
+        return name;
+      });
+
+      // 3. Unificar tudo
+      const unifiedCategories = Array.from(new Set([...configCategories, ...productCategories]));
+
+      // 4. Atualizar Config
+      await onUpdateConfig({ ...config, categories: unifiedCategories });
+
+      // 5. Corrigir produtos com grafia errada no Firestore
+      const productsToFix = products.filter(p => p.category?.toUpperCase().trim() === 'CLÁSSICA');
+      for (const p of productsToFix) {
+        await updateDoc(doc(db, 'products', p.id), { category: 'CLÁSSICO' });
+      }
+
+      showToast("Tópicos sincronizados e corrigidos!", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("Erro ao sincronizar tópicos", "error");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const allAvailableCategories = Array.from(new Set([
+    ...(config.categories || []).map(c => c.toUpperCase().trim()),
+    ...products.map(p => p.category?.toUpperCase().trim()).filter(Boolean)
+  ])).sort();
 
   const addRecipeItem = () => {
     setFormData({
@@ -159,9 +248,17 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
           <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">Menu Master</h2>
           <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.3em] mt-1">Gestão de Cardápio e Engenharia de Lucro</p>
         </div>
-        <button onClick={openAddModal} className="w-full md:w-auto bg-white text-black hover:bg-orange-500 hover:text-white px-8 py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95">
-          <Plus size={20} /> Criar Novo Burger
-        </button>
+        <div className="flex gap-4">
+          <button 
+             onClick={() => setIsTopicModalOpen(true)}
+             className="bg-zinc-800 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-zinc-700 transition-all"
+          >
+            Gerenciar Tópicos
+          </button>
+          <button onClick={openAddModal} className="w-full md:w-auto bg-white text-black hover:bg-orange-500 hover:text-white px-8 py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95">
+            <Plus size={20} /> Criar Novo Burger
+          </button>
+        </div>
       </header>
 
       {/* Grid de Produtos */}
@@ -244,7 +341,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                  <div key={index} className="bg-black/40 border border-white/5 p-4 rounded-2xl flex items-center gap-4 hover:border-white/10 transition-all">
                     <input 
                       type="text" 
-                      value={addon.name} 
+                      value={addon.name ?? ''} 
                       onChange={e => {
                         const newAddons = [...localConfig.addons];
                         newAddons[index].name = e.target.value.toUpperCase();
@@ -257,10 +354,10 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                       <span className="text-[10px] text-zinc-600 font-black">R$</span>
                       <input 
                         type="number" 
-                        value={addon.price} 
+                        value={addon.price ?? 0} 
                         onChange={e => {
                           const newAddons = [...localConfig.addons];
-                          newAddons[index].price = parseFloat(e.target.value);
+                          newAddons[index].price = parseFloat(e.target.value) || 0;
                           setLocalConfig({...localConfig, addons: newAddons});
                         }}
                         className="bg-transparent border-none outline-none text-orange-500 font-black text-xs w-14"
@@ -287,7 +384,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                    <span className="text-white font-black italic">{formatCurrency(localConfig.dessertSoloPrice || 0)}</span>
                    <input 
                      type="number" 
-                     value={localConfig.dessertSoloPrice} 
+                     value={localConfig.dessertSoloPrice ?? 0} 
                      onChange={e => setLocalConfig({...localConfig, dessertSoloPrice: parseFloat(e.target.value)})}
                      className="w-20 bg-transparent text-right outline-none text-zinc-500 font-bold"
                    />
@@ -300,7 +397,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                    <span className="text-orange-500 font-black italic text-xl">{formatCurrency(localConfig.dessertOfferPrice || 0)}</span>
                    <input 
                      type="number" 
-                     value={localConfig.dessertOfferPrice} 
+                     value={localConfig.dessertOfferPrice ?? 0} 
                      onChange={e => setLocalConfig({...localConfig, dessertOfferPrice: parseFloat(e.target.value)})}
                      className="w-20 bg-transparent text-right outline-none text-orange-900 font-black"
                    />
@@ -311,6 +408,65 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Modal de Tópicos */}
+      {isTopicModalOpen && (
+        <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-xl flex items-center justify-center p-6">
+          <div className="bg-zinc-950 border border-white/10 rounded-[3rem] w-full max-w-md overflow-hidden shadow-2xl">
+            <header className="p-8 border-b border-white/5 flex justify-between items-center">
+              <h4 className="text-xl font-black text-white uppercase italic tracking-tighter">Gerenciar Tópicos</h4>
+              <button onClick={() => setIsTopicModalOpen(false)} className="p-3 bg-white/5 rounded-full hover:bg-white/10 transition-colors"><X size={20}/></button>
+            </header>
+            <div className="p-8 space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Novo Tópico</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={newTopicName}
+                    onChange={e => setNewTopicName(e.target.value)}
+                    placeholder="EX: BEBIDAS"
+                    className="flex-1 bg-zinc-900 border border-white/5 rounded-xl p-4 text-white font-bold focus:border-orange-500 outline-none uppercase text-xs"
+                  />
+                  <button 
+                    onClick={handleAddTopic}
+                    className="bg-orange-500 text-black p-4 rounded-xl font-black hover:bg-orange-400 transition-all"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center ml-1">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Tópicos Ativos</label>
+                  <button 
+                    onClick={handleSyncCategories}
+                    disabled={isSyncing}
+                    className="text-[9px] font-black text-orange-500 uppercase flex items-center gap-1 hover:text-orange-400 disabled:opacity-50"
+                  >
+                    {isSyncing ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                    Sincronizar e Corrigir
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto pr-2 no-scrollbar">
+                  {allAvailableCategories.map((cat: string) => (
+                    <div key={cat} className="bg-white/5 border border-white/5 p-4 rounded-2xl flex justify-between items-center group">
+                      <span className="text-xs font-black text-white uppercase italic">{cat}</span>
+                      <button 
+                        onClick={() => handleRemoveTopic(cat)}
+                        className="text-zinc-700 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Produto */}
       {isModalOpen && (
@@ -327,10 +483,39 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Nome do Produto</label>
+                    <div className="flex justify-between items-center">
+                      <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Nome do Produto</label>
+                      <button 
+                        type="button"
+                        onClick={async () => {
+                          if (!formData.name) return showToast("Digite o nome primeiro", "info");
+                          setIsSubmitting(true);
+                          try {
+                            const { GoogleGenAI } = await import('@google/genai');
+                            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+                            const prompt = `Sugira uma descrição gourmet curta (máx 150 caracteres) e uma categoria (ex: Burgers, Bebidas, Acompanhamentos, Sobremesas) para um produto chamado "${formData.name}". Responda apenas JSON com 'description' e 'category'.`;
+                            const response = await ai.models.generateContent({
+                              model: 'gemini-3-flash-preview',
+                              contents: prompt,
+                              config: { responseMimeType: "application/json" }
+                            });
+                            const data = JSON.parse(response.text || '{}');
+                            if (data.description) setFormData(prev => ({ ...prev, description: data.description, category: data.category || prev.category }));
+                            showToast("Sugestão da IA aplicada!", "success");
+                          } catch (e) {
+                            showToast("Erro ao consultar IA", "error");
+                          } finally {
+                            setIsSubmitting(false);
+                          }
+                        }}
+                        className="text-[9px] font-black text-orange-500 uppercase flex items-center gap-1 hover:text-orange-400"
+                      >
+                        <Sparkles size={10} /> Sugerir com IA
+                      </button>
+                    </div>
                     <input 
                       type="text" 
-                      value={formData.name}
+                      value={formData.name ?? ''}
                       onChange={e => setFormData({...formData, name: e.target.value})}
                       className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none uppercase"
                       placeholder="EX: SK CLASSIC BURGER"
@@ -344,7 +529,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                       <input 
                         type="number" 
                         step="0.01"
-                        value={formData.price}
+                        value={formData.price ?? 0}
                         onChange={e => setFormData({...formData, price: Number(e.target.value)})}
                         className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none"
                         required
@@ -355,11 +540,27 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                       <input 
                         type="number" 
                         step="0.01"
-                        value={formData.priceCombo || ''}
+                        value={formData.priceCombo ?? ''}
                         onChange={e => setFormData({...formData, priceCombo: e.target.value ? Number(e.target.value) : null})}
                         className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Tópico (Categoria)</label>
+                    <select 
+                      value={formData.category ?? ''}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none uppercase text-xs"
+                      required
+                    >
+                      <option value="">Selecione um tópico</option>
+                      {allAvailableCategories.map((cat: string) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <p className="text-[8px] text-zinc-600 font-bold uppercase italic mt-1 ml-1">Dica: Use o botão "Gerenciar Tópicos" para criar novas categorias.</p>
                   </div>
 
                   <div className="space-y-2">
@@ -373,7 +574,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-zinc-500 ml-1">Descrição</label>
                     <textarea 
-                      value={formData.description}
+                      value={formData.description ?? ''}
                       onChange={e => setFormData({...formData, description: e.target.value})}
                       className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none h-32 resize-none"
                       placeholder="Descreva os ingredientes..."
@@ -388,7 +589,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                   </div>
                   
                   <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                    {formData.recipe.map((ing, idx) => (
+                    {(Array.isArray(formData.recipe) ? formData.recipe : []).map((ing, idx) => (
                       <div key={idx} className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
                         <select 
                           value={ing.id}

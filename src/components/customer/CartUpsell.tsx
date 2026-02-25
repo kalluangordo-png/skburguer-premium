@@ -1,0 +1,92 @@
+import React from 'react';
+import { Product, StoreConfig } from '../../types';
+import { Flame, IceCream, Plus, ArrowRight } from 'lucide-react';
+import { formatCurrency } from '../../utils';
+import { motion } from 'framer-motion';
+
+interface CartUpsellProps {
+  cart: { id: string; name: string; price: number; quantity: number; isCombo?: boolean; category: string }[];
+  allProducts: Product[];
+  config: StoreConfig;
+  onAdd: (product: any) => void;
+  onUpgrade: (itemId: string) => void;
+}
+
+const CartUpsell: React.FC<CartUpsellProps> = ({ cart, allProducts, config, onAdd, onUpgrade }) => {
+  // 1. Regra da Sobremesa
+  const hasDessert = cart.some(item => item.name.toUpperCase().includes('COPO DA FELICIDADE'));
+  const dessertProduct = allProducts.find(p => p.name.toUpperCase().includes('COPO DA FELICIDADE') && !p.isPaused);
+
+  // 2. Regra do Combo
+  const burgerToUpgrade = cart.find(item => {
+    const category = item.category.toUpperCase();
+    const isExcluded = category.includes('BEBIDA') || category.includes('SOBREMESA') || category.includes('DOCE');
+    return !isExcluded && !item.isCombo && !item.name.toUpperCase().includes('COMBO');
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Card de Sobremesa */}
+      {!hasDessert && dessertProduct && (
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-pink-500/10 border border-pink-500/20 p-5 rounded-[2rem] flex items-center gap-4 relative overflow-hidden group"
+        >
+          <div className="absolute top-0 right-0 p-2 bg-pink-500 text-white text-[8px] font-black uppercase tracking-widest rounded-bl-xl">
+            Oferta Exclusiva
+          </div>
+          <div className="w-14 h-14 bg-pink-500/20 rounded-2xl flex items-center justify-center text-pink-500 shrink-0">
+            <IceCream size={28} />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-white font-black uppercase text-[10px] italic leading-tight">Que tal um {dessertProduct.name}?</h4>
+            <p className="text-pink-500 font-black text-sm mt-0.5">
+              {formatCurrency(config.dessertOfferPrice || 12)}
+              <span className="text-[10px] text-zinc-600 line-through ml-2 font-bold">{formatCurrency(dessertProduct.price)}</span>
+            </p>
+          </div>
+          <button 
+            onClick={() => onAdd({ 
+              ...dessertProduct, 
+              name: `${dessertProduct.name} (OFERTA)`, 
+              price: config.dessertOfferPrice || 12 
+            })}
+            className="bg-pink-500 text-white p-3 rounded-xl hover:bg-pink-400 transition-all active:scale-90 shadow-lg shadow-pink-500/20"
+          >
+            <Plus size={18} strokeWidth={3} />
+          </button>
+        </motion.div>
+      )}
+
+      {/* Card de Combo */}
+      {burgerToUpgrade && (
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-orange-500/10 border border-orange-500/20 p-5 rounded-[2rem] flex items-center gap-4 relative overflow-hidden group"
+        >
+          <div className="absolute top-0 right-0 p-2 bg-orange-500 text-black text-[8px] font-black uppercase tracking-widest rounded-bl-xl">
+            Upgrade Pro
+          </div>
+          <div className="w-14 h-14 bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500 shrink-0">
+            <Flame size={28} />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-white font-black uppercase text-[10px] italic leading-tight">Bateu aquela fome de combo? 🍟🥤</h4>
+            <p className="text-zinc-500 text-[9px] font-bold mt-0.5">Adicione Batata Frita Média + Refrigerante Lata por apenas + R$ 12,00.</p>
+            <p className="text-orange-500 font-black text-sm mt-0.5">+ {formatCurrency(12)}</p>
+          </div>
+          <button 
+            onClick={() => onUpgrade(burgerToUpgrade.id)}
+            className="bg-orange-500 text-black p-3 rounded-xl hover:bg-orange-400 transition-all active:scale-90 shadow-lg shadow-orange-500/20"
+          >
+            <Plus size={18} strokeWidth={3} />
+          </button>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+export default CartUpsell;
