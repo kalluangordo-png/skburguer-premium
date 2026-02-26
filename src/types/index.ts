@@ -13,18 +13,6 @@ export enum PaymentMethod {
   ALELO = 'ALELO'
 }
 
-export interface InventoryItem {
-  id: string;
-  name: string;
-  costPrice: number;
-  stock: number;
-  unit: string;
-  quantity: number;
-  minQuantity: number;
-  physicalCount?: number;
-}
-
-
 export interface StoreConfig {
   dailyGoal: number;
   whatsappNumber: string;
@@ -40,13 +28,6 @@ export interface StoreConfig {
   categories?: string[];
 }
 
-
-
-export interface RecipeIngredient {
-  id: string;
-  qty: number;
-}
-
 export interface Product {
   id: string;
   name: string;
@@ -54,11 +35,8 @@ export interface Product {
   priceCombo?: number | null;
   description: string;
   category: string;
-  stock: number;
   image: string;
-  recipe: RecipeIngredient[];
   isPaused: boolean;
-  cmv: number;
 }
 
 export interface OrderItem {
@@ -74,7 +52,7 @@ export interface OrderItem {
 export enum OrderStatus {
   PENDING = 'pending',
   PREPARING = 'preparing',
-  READY = 'ready',
+  READY = 'ready_for_delivery',
   DELIVERING = 'delivering',
   DELIVERED = 'delivered',
   COMPLETED = 'completed',
@@ -106,51 +84,5 @@ export interface Order {
   dataCriacao: any;
   preparacaoIniciadaEm?: any;
   finalizadoEm?: any;
-  entregadorId?: string;
-  entregadorNome?: string;
-  deliveryStart?: any;
-  gpsConfirmado?: boolean;
-}
-
-export interface Driver {
-  id: string;
-  name: string;
-  pin: string;
-  status: 'idle' | 'busy' | 'offline';
-}
-
-
-export interface FinancialSummary {
-  bruto: number;
-  taxasGateway: number;
-  custoInsumos: number; // CMV
-  custoOperacional: number; // Chapeiro + Motoboy
-  lucroLiquido: number;
-  ticketMedio: number;
-}
-
-export interface WasteLog {
-  id: string;
-  itemId: string;
-  itemName: string;
-  quantity: number;
-  reason: 'queimado' | 'vencido' | 'erro_preparo' | 'outros';
-  date: any;
-  costImpact: number;
-}
-
-export interface IngredientItem {
-  id: string;
-  qty: number;
-}
-
-// Tipo auxiliar para garantir que a baixa de estoque 
-// aconteça apenas se o produto tiver receita (recipe)
-export interface MissingCustomer {
-  name: string;
-  phone: string;
-  lastOrderDate: Date;
-  daysSince: number;
-  totalOrders: number;
 }
 

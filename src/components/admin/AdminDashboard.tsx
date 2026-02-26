@@ -4,7 +4,7 @@ import {
   Sparkles, Loader2, MessageSquare, ShieldCheck 
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Order, StoreConfig, InventoryItem, PaymentMethod } from '../../types';
+import { Order, StoreConfig, PaymentMethod } from '../../types';
 import { DIARIA_MOTOBOY, DIARIA_CHAPEIRO, GATEWAY_FEES, STAFF_COSTS } from '../../constants';
 import { useToast } from '../ToastContext';
 import { generateCEOInsights } from '../../services/geminiService';
@@ -13,10 +13,9 @@ import { formatCurrency } from '../../utils';
 interface Props {
   orders: Order[];
   config: StoreConfig;
-  inventory: InventoryItem[];
 }
 
-const AdminDashboard: React.FC<Props> = ({ orders, config, inventory }) => {
+const AdminDashboard: React.FC<Props> = ({ orders, config }) => {
   const { showToast } = useToast();
   const [insights, setInsights] = useState<any[]>([]);
   const [loadingInsights, setLoadingInsights] = useState(false);
@@ -36,14 +35,12 @@ const AdminDashboard: React.FC<Props> = ({ orders, config, inventory }) => {
     
     const metaDiaria = config.dailyGoal || 400;
     const progresso = (faturamentoBruto / metaDiaria) * 100;
-    const costAlert = (cmvTotal / (faturamentoBruto || 1)) > 0.40;
 
     return {
       bruto: faturamentoBruto,
       liquido: lucroLiquido,
       pedidos: orders.length,
       progresso,
-      costAlert,
       cmv: cmvTotal,
       taxas: taxaTotal
     };
@@ -55,7 +52,7 @@ const AdminDashboard: React.FC<Props> = ({ orders, config, inventory }) => {
       if (orders.length > 0) {
         setLoadingInsights(true);
         try {
-          const result = await generateCEOInsights(orders, inventory);
+          const result = await generateCEOInsights(orders);
           setInsights(result.insights || []);
         } catch (e) {
           console.error("Erro ao gerar insights IA");
@@ -79,7 +76,6 @@ const AdminDashboard: React.FC<Props> = ({ orders, config, inventory }) => {
     msg += `💵 *LUCRO REAL:* ${formatCurrency(stats.liquido)}\n`;
     msg += `🎯 *META:* ${stats.progresso.toFixed(1)}%\n\n`;
     msg += `📦 Pedidos: ${stats.pedidos}\n`;
-    msg += `⚠️ Reposição: ${inventory.filter(i => i.quantity <= i.minQuantity).map(i => i.name).join(', ') || 'OK'}`;
 
     const whatsappUrl = `https://wa.me/${config.whatsappNumber}?text=${encodeURIComponent(msg)}`;
     window.open(whatsappUrl);
@@ -108,14 +104,6 @@ const AdminDashboard: React.FC<Props> = ({ orders, config, inventory }) => {
           <MessageSquare size={16} /> Fechar Caixa & WhatsApp
         </button>
       </div>
-
-      {/* Alerta de Custo Crítico */}
-      {stats.costAlert && (
-        <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-2xl flex items-center gap-4 text-red-500">
-          <AlertCircle className="animate-pulse" />
-          <p className="text-[10px] font-black uppercase tracking-widest">Atenção Kalluan: O custo dos insumos ultrapassou 40% do faturamento!</p>
-        </div>
-      )}
 
       {/* Cards de Métricas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

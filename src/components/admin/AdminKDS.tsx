@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Order, Product, InventoryItem, OrderStatus } from '../../types';
+import { Order, Product, OrderStatus } from '../../types';
 import { Clock, Play, CheckCircle, Star, IceCream, AlertCircle } from 'lucide-react';
 import * as Firestore from 'firebase/firestore';
 const { doc, serverTimestamp, runTransaction, increment, updateDoc } = Firestore as any;
@@ -11,10 +11,9 @@ import PrintTicket from './PrintTicket';
 interface AdminKDSProps {
   orders: Order[];
   products: Product[];
-  inventory: InventoryItem[];
 }
 
-const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products, inventory }) => {
+const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products }) => {
   const [now, setNow] = useState(new Date());
   const { showToast } = useToast();
 
@@ -39,32 +38,15 @@ const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products, inventory }) => {
       // Impressão automática imediata
       printOrderTicket(order.id);
       
-      await runTransaction(db, async (transaction: any) => {
-        const orderRef = doc(db, 'pedidos', order.id);
-        
-        transaction.update(orderRef, { 
-          status: OrderStatus.PREPARING,
-          preparacaoIniciadaEm: serverTimestamp() 
-        });
-
-        for (const item of order.itens) {
-          const product = products.find(p => p.id === item.id);
-          if (product?.recipe && Array.isArray(product.recipe)) {
-            for (const ing of product.recipe) {
-              const inventoryRef = doc(db, 'inventory', ing.id);
-              const totalDeduction = Number(ing.qty) * Number(item.qtd);
-              
-              // Baixa atômica no estoque
-              transaction.update(inventoryRef, { 
-                quantity: increment(-totalDeduction) 
-              });
-            }
-          }
-        }
+      const orderRef = doc(db, 'pedidos', order.id);
+      await updateDoc(orderRef, { 
+        status: OrderStatus.PREPARING,
+        preparacaoIniciadaEm: serverTimestamp() 
       });
+
       showToast(`Pedido #${order.numeroComanda} na chapa!`, "success");
     } catch (e) {
-      showToast("Erro ao processar baixa de estoque.", "error");
+      showToast("Erro ao iniciar produção.", "error");
     }
   };
 
@@ -129,7 +111,12 @@ const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products, inventory }) => {
                         {item.qtd}
                       </div>
                       <div className="flex-1">
-                        <p className="font-black text-zinc-100 text-sm uppercase leading-tight italic">{item.name}</p>
+                        <p className="font-black text-zinc-100 text-sm uppercase leading-tight italic flex items-center gap-2">
+                          {item.name}
+                          {(item as any).isCombo && (
+                            <span className="bg-emerald-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded-md not-italic">COMBO</span>
+                          )}
+                        </p>
                         
                         {item.addons && item.addons.length > 0 && (
                           <div className="mt-1.5 flex flex-wrap gap-1">

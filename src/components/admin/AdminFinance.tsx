@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { TrendingUp, PieChart, Award, Calculator } from 'lucide-react';
-import { Order, PaymentMethod, Product, InventoryItem } from '../../types';
+import { Order, PaymentMethod, Product } from '../../types';
 // Importação centralizada das suas regras de ouro
 import { DIARIA_MOTOBOY, DIARIA_CHAPEIRO } from '../../constants';
 import { formatCurrency } from '../../utils';
@@ -8,10 +8,9 @@ import { formatCurrency } from '../../utils';
 interface Props {
   orders: Order[];
   products?: Product[];
-  inventory?: InventoryItem[];
 }
 
-const AdminFinance: React.FC<Props> = ({ orders, products = [], inventory = [] }) => {
+const AdminFinance: React.FC<Props> = ({ orders, products = [] }) => {
   const stats = useMemo(() => {
     // 1. Faturamento Bruto
     const gross = orders.reduce((acc, o) => acc + o.total, 0);
@@ -25,7 +24,7 @@ const AdminFinance: React.FC<Props> = ({ orders, products = [], inventory = [] }
       return acc + fee;
     }, 0);
 
-    // 3. Cálculo de CMV Real (Ficha Técnica)
+    // 3. Cálculo de CMV Estimado (35% fixo conforme remoção de Ficha Técnica)
     const productMap: Record<string, { name: string, sales: number, revenue: number, realCmv: number }> = {};
     
     orders.forEach(order => {
@@ -34,17 +33,7 @@ const AdminFinance: React.FC<Props> = ({ orders, products = [], inventory = [] }
           productMap[item.name] = { name: item.name, sales: 0, revenue: 0, realCmv: 0 };
         }
         
-        const prodData = products.find(p => p.id === item.id);
-        let itemCmv = 0;
-        
-        if (prodData?.recipe) {
-          itemCmv = prodData.recipe.reduce((total, ing) => {
-            const invItem = inventory.find(inv => inv.id === ing.id);
-            return total + (ing.qty * (invItem?.costPrice || 0));
-          }, 0);
-        } else {
-          itemCmv = item.price * 0.35; // Fallback 35%
-        }
+        const itemCmv = item.price * 0.35; // Fallback 35% fixo
 
         productMap[item.name].sales += item.qtd;
         productMap[item.name].revenue += item.price * item.qtd;
@@ -69,7 +58,7 @@ const AdminFinance: React.FC<Props> = ({ orders, products = [], inventory = [] }
       .slice(0, 3);
 
     return { gross, netProfit, totalFees, totalCMV, topProducts, custosFixos };
-  }, [orders, products, inventory]);
+  }, [orders, products]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">

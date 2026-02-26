@@ -46,14 +46,13 @@ const Menu: React.FC<MenuProps> = ({ onBack, config }) => {
   // Categorias dinâmicas: União das configuradas + as que existem nos produtos
   const categories = useMemo(() => {
     const fixName = (name: string) => {
-      const n = name.toUpperCase().trim();
-      return n === 'CLÁSSICA' ? 'CLÁSSICO' : n;
+      return name.toUpperCase().trim();
     };
 
     const configCats = (config.categories || []).map(fixName);
-    const productCats = allProducts.map(p => fixName(p.category || '')).filter(Boolean);
+    const productCats = allProducts.map(p => fixName(p.category || 'GERAL')).filter(Boolean);
     const combined = Array.from(new Set([...configCats, ...productCats])).filter(Boolean);
-    const finalCats = combined.length > 0 ? combined : ['BURGERS', 'COMBOS', 'BEBIDAS', 'ACOMPANHAMENTOS'];
+    const finalCats = combined.length > 0 ? combined : ['BURGERS', 'COMBOS', 'BEBIDAS', 'ACOMPANHAMENTOS', 'GERAL'];
     return ['TODOS', ...finalCats];
   }, [config.categories, allProducts]);
 
@@ -295,6 +294,7 @@ const Menu: React.FC<MenuProps> = ({ onBack, config }) => {
               qtd: i.quantity, 
               price: i.price - 12,
               isComboPart: true,
+              isCombo: true,
               addons: i.addons 
             },
             {
@@ -304,7 +304,7 @@ const Menu: React.FC<MenuProps> = ({ onBack, config }) => {
               price: 12,
               category: 'Acompanhamento',
               isComboUpgrade: true,
-              hasST: true // Identificador para o AdminSK separar o imposto do Refri
+              hasST: true
             }
           ];
         }
@@ -318,31 +318,59 @@ const Menu: React.FC<MenuProps> = ({ onBack, config }) => {
         }];
       });
 
-      const orderData = {
-        numeroComanda: comanda,
-        itens: processedItens,
-        total: finalTotal,
-        subtotal,
-        taxaEntrega: deliveryFee,
-        taxas: paymentAdjustment,
+      // Função para limpar campos undefined e remover campos proibidos
+      const cleanOrderData = (obj: any) => {
+        const forbiddenFields = ['insumos', 'inventory', 'estoque', 'ficha técnica', 'fichaTecnica'];
+        const cleaned = JSON.parse(JSON.stringify(obj, (key, value) => {
+          if (value === undefined) return null; // Firestore prefere null ou remover
+          if (forbiddenFields.includes(key)) return undefined; // Remove campos proibidos
+          return value;
+        }));
+        
+        // Remover propriedades que ficaram undefined após o stringify
+        Object.keys(cleaned).forEach(key => {
+          if (cleaned[key] === undefined) delete cleaned[key];
+        });
+        
+        return cleaned;
+      };
+
+      const orderData = cleanOrderData({
+        numeroComanda: comanda || '0000',
+        itens: (processedItens || []).map(item => ({
+          id: item.id || 'unknown',
+          name: item.name || 'ITEM SEM NOME',
+          qtd: item.qtd || 1,
+          price: item.price || 0,
+          category: item.category || 'GERAL',
+          isCombo: !!item.isCombo,
+          addons: item.addons || [],
+          obsExtras: item.obsExtras || []
+        })),
+        total: finalTotal || 0,
+        subtotal: subtotal || 0,
+        taxaEntrega: deliveryFee || 0,
+        taxas: paymentAdjustment || 0,
         status: OrderStatus.PENDING,
-        pagamento: paymentMethod,
-        customerName: formData.nome,
-        customerPhone: formData.whatsapp,
-        address: `${formData.endereco}, ${formData.numeroCasa} - ${formData.bairro} (CEP: ${formData.cep})`,
+        pagamento: paymentMethod || 'PIX',
+        customerName: formData.nome || 'CLIENTE',
+        customerPhone: formData.whatsapp || '',
+        address: `${formData.endereco || ''}, ${formData.numeroCasa || ''} - ${formData.bairro || ''} (CEP: ${formData.cep || ''})`,
         cliente: {
-          nome: formData.nome,
-          whatsapp: formData.whatsapp,
-          endereco: formData.endereco,
-          numeroCasa: formData.numeroCasa,
-          cep: formData.cep,
-          bairro: formData.bairro,
-          referencia: formData.referencia,
-          observacao: formData.observacao
+          nome: formData.nome || 'CLIENTE',
+          whatsapp: formData.whatsapp || '',
+          endereco: formData.endereco || '',
+          numeroCasa: formData.numeroCasa || '',
+          cep: formData.cep || '',
+          bairro: formData.bairro || '',
+          referencia: formData.referencia || '',
+          observacao: formData.observacao || ''
         },
         createdAt: Date.now(),
         dataCriacao: serverTimestamp()
-      };
+      });
+
+      console.log("DADOS DO PEDIDO PARA FIREBASE (LIMPOS):", orderData);
 
       await addDoc(collection(db, 'pedidos'), orderData);
       
@@ -360,6 +388,33 @@ const Menu: React.FC<MenuProps> = ({ onBack, config }) => {
       setLastOrderComanda(comanda);
       setCheckoutStep('success');
       setCart([]);
+
+      // Redirecionamento para WhatsApp
+      const storePhone = config.whatsappNumber || '47988192163';
+      let msg = `🍔 *NOVO PEDIDO SK BURGERS - #${comanda}*\n\n`;
+      msg += `👤 *CLIENTE:* ${formData.nome}\n`;
+      msg += `📍 *ENDEREÇO:* ${formData.endereco}, ${formData.numeroCasa} - ${formData.bairro}\n`;
+      if (formData.referencia) msg += `📌 *REF:* ${formData.referencia}\n`;
+      msg += `\n🛒 *ITENS:*\n`;
+      
+      cart.forEach(item => {
+        msg += `• ${item.quantity}x ${item.name.toUpperCase()}${item.isCombo ? ' [COMBO]' : ''}\n`;
+        if (item.addons && item.addons.length > 0) {
+          item.addons.forEach(a => msg += `  + ${a.name}\n`);
+        }
+      });
+
+      msg += `\n💰 *TOTAL:* ${formatCurrency(finalTotal)}\n`;
+      msg += `💳 *PAGAMENTO:* ${paymentMethod}\n`;
+      if (formData.observacao) msg += `\n📝 *OBS:* ${formData.observacao}`;
+
+      const whatsappUrl = `https://wa.me/${storePhone}?text=${encodeURIComponent(msg)}`;
+      
+      // Pequeno delay para o usuário ver a tela de sucesso antes do redirect
+      setTimeout(() => {
+        window.open(whatsappUrl, '_blank');
+      }, 1500);
+
     } catch (error: any) {
       clearTimeout(timeout);
       console.error("Erro ao salvar pedido:", error);
@@ -530,7 +585,12 @@ const Menu: React.FC<MenuProps> = ({ onBack, config }) => {
                             )}
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-black uppercase text-xs italic">{item.name}</h4>
+                            <h4 className="text-white font-black uppercase text-xs italic flex items-center gap-2">
+                              {item.name}
+                              {item.isCombo && (
+                                <span className="bg-emerald-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded-md not-italic">COMBO</span>
+                              )}
+                            </h4>
                             {item.addons && item.addons.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {item.addons.map((a, i) => (

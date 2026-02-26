@@ -85,9 +85,12 @@ const KitchenCard: React.FC<KitchenCardProps> = ({
                 <span className={`font-black text-lg italic ${isChecked(idx) ? 'text-zinc-400' : 'text-orange-500'}`}>
                   {item.qtd}x
                 </span>
-                <p className={`text-base font-black leading-tight transition-all duration-300 uppercase italic
+                <p className={`text-base font-black leading-tight transition-all duration-300 uppercase italic flex items-center gap-2
                   ${isChecked(idx) ? 'text-zinc-500 line-through' : 'text-zinc-100'}`}>
                   {item.name}
+                  {(item as any).isCombo && !isChecked(idx) && (
+                    <span className="bg-emerald-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded-md not-italic">COMBO</span>
+                  )}
                 </p>
               </div>
 

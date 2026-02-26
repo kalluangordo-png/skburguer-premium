@@ -7,14 +7,13 @@ import {
   collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '../../services/firebase';
-import { Product, InventoryItem, StoreConfig, RecipeIngredient } from '../../types';
+import { Product, StoreConfig } from '../../types';
 import { useToast } from '../ToastContext';
 import { formatCurrency } from '../../utils';
 import PhotoUpload from './PhotoUpload';
 
 interface AdminProductsProps {
   products: Product[];
-  inventory: InventoryItem[];
   config: StoreConfig;
   onUpdateConfig: (config: StoreConfig) => Promise<void>;
   onToggleStatus: (product: Product) => Promise<void>;
@@ -27,7 +26,7 @@ const optimizeImage = (url: string, width: number) => {
 };
 
 const AdminProducts: React.FC<AdminProductsProps> = ({ 
-  products, inventory, config, onUpdateConfig, onToggleStatus, onDelete 
+  products, config, onUpdateConfig, onToggleStatus, onDelete 
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTopicModalOpen, setIsTopicModalOpen] = useState(false);
@@ -39,15 +38,13 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
   const [localConfig, setLocalConfig] = useState<StoreConfig>(config);
   const { showToast } = useToast();
 
-  const [formData, setFormData] = useState<Omit<Product, 'id' | 'cmv' | 'isPaused'>>({
+  const [formData, setFormData] = useState<Omit<Product, 'id' | 'isPaused'>>({
     name: '',
     price: 0,
     priceCombo: null,
     description: '',
     category: 'Burgers',
-    stock: 0,
     image: '',
-    recipe: []
   });
 
   useEffect(() => {
@@ -62,9 +59,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
       priceCombo: null,
       description: '',
       category: 'Burgers',
-      stock: 0,
       image: '',
-      recipe: []
     });
     setIsModalOpen(true);
   };
@@ -77,9 +72,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
       priceCombo: product.priceCombo || null,
       description: product.description || '',
       category: product.category || 'Burgers',
-      stock: product.stock || 0,
       image: product.image || '',
-      recipe: Array.isArray(product.recipe) ? product.recipe : []
     });
     setIsModalOpen(true);
   };
@@ -90,12 +83,6 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
     
     setIsSubmitting(true);
     try {
-      const recipe = Array.isArray(formData.recipe) ? formData.recipe : [];
-      const calculatedCmv = recipe.reduce((acc, ing) => {
-        const item = inventory.find(i => i.id === ing.id);
-        return acc + (Number(ing.qty || 0) * (item?.costPrice || 0));
-      }, 0);
-
       const category = formData.category.trim().toUpperCase();
       const currentCategories = (config.categories || []).map(c => c.toUpperCase().trim());
       
@@ -111,10 +98,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
         priceCombo: formData.priceCombo ? Number(formData.priceCombo) : null, 
         description: formData.description || '',
         category: category,
-        stock: Number(formData.stock || 0),
         image: formData.image || '',
-        recipe: recipe,
-        cmv: calculatedCmv || 0,
         updatedAt: serverTimestamp() 
       };
 
@@ -171,12 +155,20 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
   };
 
   const handleRemoveTopic = async (topic: string) => {
-    if (!window.confirm(`Deseja remover o tópico "${topic}"? Produtos vinculados a ele continuarão existindo.`)) return;
+    if (!window.confirm(`Deseja remover o tópico "${topic}"? Todos os produtos vinculados a ele serão movidos para "GERAL".`)) return;
     
     const newCategories = (config.categories || []).filter(c => c !== topic);
     try {
+      // 1. Atualizar Config
       await onUpdateConfig({ ...config, categories: newCategories });
-      showToast("Tópico removido!", "info");
+      
+      // 2. Atualizar Produtos vinculados
+      const productsToUpdate = products.filter(p => p.category?.toUpperCase().trim() === topic.toUpperCase().trim());
+      for (const p of productsToUpdate) {
+        await updateDoc(doc(db, 'products', p.id), { category: 'GERAL' });
+      }
+
+      showToast("Tópico removido e produtos atualizados!", "info");
     } catch (e) {
       showToast("Erro ao remover tópico", "error");
     }
@@ -188,12 +180,8 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
       // 1. Coletar todas as categorias dos produtos
       const productCategories = products.map(p => p.category?.toUpperCase().trim()).filter(Boolean);
       
-      // 2. Coletar categorias da config e aplicar correção de grafia
-      const configCategories = (config.categories || []).map(c => {
-        let name = c.toUpperCase().trim();
-        if (name === 'CLÁSSICA') return 'CLÁSSICO';
-        return name;
-      });
+      // 2. Coletar categorias da config
+      const configCategories = (config.categories || []).map(c => c.toUpperCase().trim());
 
       // 3. Unificar tudo
       const unifiedCategories = Array.from(new Set([...configCategories, ...productCategories]));
@@ -201,13 +189,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
       // 4. Atualizar Config
       await onUpdateConfig({ ...config, categories: unifiedCategories });
 
-      // 5. Corrigir produtos com grafia errada no Firestore
-      const productsToFix = products.filter(p => p.category?.toUpperCase().trim() === 'CLÁSSICA');
-      for (const p of productsToFix) {
-        await updateDoc(doc(db, 'products', p.id), { category: 'CLÁSSICO' });
-      }
-
-      showToast("Tópicos sincronizados e corrigidos!", "success");
+      showToast("Tópicos sincronizados!", "success");
     } catch (e) {
       console.error(e);
       showToast("Erro ao sincronizar tópicos", "error");
@@ -221,32 +203,12 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
     ...products.map(p => p.category?.toUpperCase().trim()).filter(Boolean)
   ])).sort();
 
-  const addRecipeItem = () => {
-    setFormData({
-      ...formData,
-      recipe: [...formData.recipe, { id: '', qty: 0 }]
-    });
-  };
-
-  const removeRecipeItem = (index: number) => {
-    setFormData({
-      ...formData,
-      recipe: formData.recipe.filter((_, i) => i !== index)
-    });
-  };
-
-  const updateRecipeItem = (index: number, field: keyof RecipeIngredient, value: string | number) => {
-    const newRecipe = [...formData.recipe];
-    newRecipe[index] = { ...newRecipe[index], [field]: value };
-    setFormData({ ...formData, recipe: newRecipe });
-  };
-
   return (
     <div className="space-y-8 animate-in fade-in duration-700 pb-20">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">Menu Master</h2>
-          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.3em] mt-1">Gestão de Cardápio e Engenharia de Lucro</p>
+          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.3em] mt-1">Gestão de Cardápio</p>
         </div>
         <div className="flex gap-4">
           <button 
@@ -579,43 +541,6 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                       className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none h-32 resize-none"
                       placeholder="Descreva os ingredientes..."
                     />
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center px-1">
-                    <label className="text-[10px] font-black uppercase text-zinc-500">Ficha Técnica (Receita)</label>
-                    <button type="button" onClick={addRecipeItem} className="text-[10px] font-black text-orange-500 uppercase">+ Insumo</button>
-                  </div>
-                  
-                  <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
-                    {(Array.isArray(formData.recipe) ? formData.recipe : []).map((ing, idx) => (
-                      <div key={idx} className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/5">
-                        <select 
-                          value={ing.id}
-                          onChange={e => updateRecipeItem(idx, 'id', e.target.value)}
-                          className="bg-zinc-900 text-white text-xs font-bold rounded-lg p-2 flex-1 outline-none border border-white/5"
-                        >
-                          <option value="">Selecionar Insumo</option>
-                          {inventory.map(item => (
-                            <option key={item.id} value={item.id}>{item.name}</option>
-                          ))}
-                        </select>
-                        <input 
-                          type="number" 
-                          value={ing.qty}
-                          onChange={e => updateRecipeItem(idx, 'qty', Number(e.target.value))}
-                          className="w-16 bg-zinc-900 text-white text-xs font-bold rounded-lg p-2 outline-none border border-white/5"
-                          placeholder="QTD"
-                        />
-                        <button type="button" onClick={() => removeRecipeItem(idx)} className="text-zinc-600 hover:text-red-500"><Trash2 size={16}/></button>
-                      </div>
-                    ))}
-                    {formData.recipe.length === 0 && (
-                      <div className="text-center py-8 border-2 border-dashed border-white/5 rounded-2xl opacity-20">
-                        <p className="text-[10px] font-black uppercase">Sem insumos vinculados</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

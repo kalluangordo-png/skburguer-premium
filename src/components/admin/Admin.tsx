@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Lock, ArrowLeft, Package, Settings, Truck, ChefHat, Utensils, Users, ClipboardList, Loader2, Rocket } from 'lucide-react';
+import { LayoutDashboard, Lock, ArrowLeft, Settings, ChefHat, Utensils, ClipboardList, Loader2, Rocket } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../services/utils';
 import AdminDashboard from './AdminDashboard';
-import AdminInventory from './AdminInventory';
 import AdminConfig from './AdminConfig';
-import AdminDispatch from './AdminDispatch';
 import AdminKDS from './AdminKDS';
 import AdminProducts from './AdminProducts';
-import AdminMarketing from './AdminMarketing';
 import AdminOrders from './AdminOrders';
-import { Order, Product, InventoryItem, StoreConfig, Driver } from '../../types';
-import { collection, onSnapshot, query, doc, getDoc, setDoc, updateDoc, orderBy } from 'firebase/firestore';
+import { Order, Product, StoreConfig } from '../../types';
+import { collection, onSnapshot, query, doc, setDoc, updateDoc, orderBy } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { useToast } from '../ToastContext';
 
@@ -20,15 +17,13 @@ const Admin: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inventory' | 'products' | 'orders' | 'kds' | 'dispatch' | 'marketing' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'kds' | 'settings'>('dashboard');
   const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [config, setConfig] = useState<StoreConfig | null>(null);
 
   useEffect(() => {
@@ -41,30 +36,29 @@ const Admin: React.FC = () => {
       setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
     });
 
-    const unsubInventory = onSnapshot(collection(db, 'inventory'), (snapshot) => {
-      setInventory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem)));
-    });
-
     const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
     });
 
-    const unsubDrivers = onSnapshot(collection(db, 'motoboys'), (snapshot) => {
-      setDrivers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Driver)));
-    });
-
-    const unsubConfig = onSnapshot(doc(db, 'config', 'store'), (snapshot) => {
+    const unsubConfig = onSnapshot(doc(db, 'config', 'store'), async (snapshot) => {
       if (snapshot.exists()) {
         setConfig(snapshot.data() as StoreConfig);
+      } else {
+        // Auto-inicialização silenciosa se o documento não existir
+        try {
+          const { seedInitialData } = await import('../../services/seedService');
+          await seedInitialData();
+          console.log("Configuração 'store' inicializada automaticamente.");
+        } catch (e) {
+          console.error("Erro na auto-inicialização:", e);
+        }
       }
       setLoading(false);
     });
 
     return () => {
       unsubOrders();
-      unsubInventory();
       unsubProducts();
-      unsubDrivers();
       unsubConfig();
     };
   }, [isAuthenticated]);
@@ -77,25 +71,6 @@ const Admin: React.FC = () => {
     } else {
       setError(true);
       setPassword('');
-    }
-  };
-
-  const handleSaveInventory = async (item: Partial<InventoryItem>) => {
-    try {
-      if (item.id) {
-        await setDoc(doc(db, 'inventory', item.id), item, { merge: true });
-        showToast("Estoque atualizado!", "success");
-      }
-    } catch (e) {
-      showToast("Erro ao salvar estoque", "error");
-    }
-  };
-
-  const handleUpdateStock = async (id: string, newQty: number) => {
-    try {
-      await setDoc(doc(db, 'inventory', id), { quantity: newQty }, { merge: true });
-    } catch (e) {
-      showToast("Erro ao atualizar quantidade", "error");
     }
   };
 
@@ -191,12 +166,9 @@ const Admin: React.FC = () => {
         <nav className="flex bg-zinc-900/50 p-1.5 rounded-2xl border border-white/5 overflow-x-auto no-scrollbar max-w-full">
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-            { id: 'inventory', icon: Package, label: 'Almoxarifado' },
             { id: 'products', icon: Utensils, label: 'Cardápio' },
             { id: 'orders', icon: ClipboardList, label: 'Pedidos' },
             { id: 'kds', icon: ChefHat, label: 'Cozinha' },
-            { id: 'dispatch', icon: Truck, label: 'Despacho' },
-            { id: 'marketing', icon: Users, label: 'Marketing' },
             { id: 'settings', icon: Settings, label: 'Config' },
           ].map((tab) => (
             <button 
@@ -221,23 +193,12 @@ const Admin: React.FC = () => {
             <AdminDashboard 
               orders={orders} 
               config={config}
-              inventory={inventory} 
             />
           )}
           
-          {activeTab === 'inventory' && (
-            <AdminInventory 
-              inventory={inventory}
-              products={products}
-              onSave={handleSaveInventory}
-              onUpdateStock={handleUpdateStock}
-            />
-          )}
-
           {activeTab === 'products' && (
             <AdminProducts 
               products={products}
-              inventory={inventory}
               config={config}
               onUpdateConfig={handleSaveConfig}
               onToggleStatus={handleToggleProductStatus}
@@ -255,19 +216,7 @@ const Admin: React.FC = () => {
             <AdminKDS 
               orders={orders}
               products={products}
-              inventory={inventory}
             />
-          )}
-
-          {activeTab === 'dispatch' && (
-            <AdminDispatch 
-              orders={orders}
-              drivers={drivers}
-            />
-          )}
-
-          {activeTab === 'marketing' && (
-            <AdminMarketing />
           )}
 
           {activeTab === 'settings' && (

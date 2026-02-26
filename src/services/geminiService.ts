@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Order, InventoryItem } from "../types";
+import { Order } from "../types";
 
 let aiInstance: GoogleGenAI | null = null;
 
@@ -14,7 +14,7 @@ const getAI = () => {
   return aiInstance;
 };
 
-export const generateCEOInsights = async (orders: Order[], inventory: InventoryItem[]) => {
+export const generateCEOInsights = async (orders: Order[]) => {
   const model = "gemini-3-flash-preview";
   
   try {
@@ -24,7 +24,6 @@ export const generateCEOInsights = async (orders: Order[], inventory: InventoryI
     Analise os seguintes dados e forneça 3 insights estratégicos curtos.
     
     Pedidos: ${JSON.stringify(orders.map(o => ({ total: o.total, pagamento: o.pagamento })))}
-    Estoque Crítico: ${JSON.stringify(inventory.filter(i => i.quantity <= i.minQuantity))}
     
     Regras de Negócio:
     - Meta Diária: R$ 400

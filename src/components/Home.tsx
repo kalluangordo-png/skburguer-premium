@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, ChefHat, Settings, ShoppingCart, Beef, Zap, ArrowRight } from 'lucide-react';
+import { ChefHat, Settings, ShoppingCart, Beef, Zap, ArrowRight } from 'lucide-react';
 
 const Home: React.FC = () => {
     const navigate = useNavigate();
@@ -90,8 +90,6 @@ const Home: React.FC = () => {
                         <button onClick={() => navigate('/admin')} className="p-2.5 text-zinc-400 hover:text-orange-500 transition-colors" title="Acesso Admin"><Settings size={16} /></button>
                         <div className="w-px h-3 bg-white/10 mx-1"></div>
                         <button onClick={() => navigate('/kitchen')} className="p-2.5 text-zinc-400 hover:text-blue-500 transition-colors" title="Monitor KDS"><ChefHat size={16} /></button>
-                        <div className="w-px h-3 bg-white/10 mx-1"></div>
-                        <button onClick={() => navigate('/driver')} className="p-2.5 text-zinc-400 hover:text-emerald-500 transition-colors" title="App Entregador"><Truck size={16} /></button>
                     </div>
                 </footer>
             </div>

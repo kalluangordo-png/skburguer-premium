@@ -6,7 +6,6 @@ import { ToastProvider } from './components/ToastContext';
 import Admin from './components/admin/Admin';
 import CustomerApp from './components/customer/CustomerApp';
 import Home from './components/Home';
-import Driver from './components/driver/Driver';
 import Kitchen from './components/Kitchen';
 
 const App: React.FC = () => {
@@ -22,9 +21,6 @@ const App: React.FC = () => {
 
           {/* Área Administrativa (Protegida pela Senha 1214 nas diretrizes) */}
           <Route path="/admin" element={<Admin />} />
-
-          {/* Área de Entrega (Motoboy) */}
-          <Route path="/driver" element={<Driver />} />
 
           {/* KDS - Tela da Cozinha (Timer de 20 min) */}
           <Route path="/kitchen" element={<Kitchen />} />

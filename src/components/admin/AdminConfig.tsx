@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Save, Loader2, DatabaseBackup, Rocket, CloudRain, AlertOctagon, Power, 
-  Target, Hash, IceCream, Lock, Eye, EyeOff, X 
+  Target, Hash, IceCream, Lock, Eye, EyeOff, X, MessageSquare 
 } from 'lucide-react';
 import { StoreConfig } from '../../types';
 import { useToast } from '../ToastContext';
@@ -136,6 +136,19 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
                 onChange={e => setLocalConfig({...localConfig, pixKey: e.target.value})}
                 className="bg-transparent border-none outline-none text-white font-bold w-full text-sm" 
                 placeholder="pix@skburgers.com"
+              />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">WhatsApp da Loja</label>
+            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-orange-500/50 transition-all">
+              <MessageSquare size={20} className="text-orange-500" />
+              <input 
+                type="text" 
+                value={localConfig.whatsappNumber ?? ''} 
+                onChange={e => setLocalConfig({...localConfig, whatsappNumber: e.target.value.replace(/\D/g, '')})}
+                className="bg-transparent border-none outline-none text-white font-bold w-full text-sm" 
+                placeholder="5592999999999"
               />
             </div>
           </div>
