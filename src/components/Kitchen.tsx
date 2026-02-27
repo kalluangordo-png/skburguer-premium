@@ -38,17 +38,17 @@ const KitchenCard: React.FC<KitchenCardProps> = ({
 
   return (
     <div className={`flex flex-col rounded-[2.5rem] border transition-all duration-500 overflow-hidden bg-zinc-900/40 backdrop-blur-xl group h-fit shrink-0 w-[350px]
-      ${isCritical ? 'kds-warning' : isOld ? 'border-orange-500/50 shadow-[0_0_30px_rgba(249,115,22,0.1)]' : 'border-white/5'}
+      ${isCritical ? 'kds-warning' : isOld ? 'border-yellow-500/50 shadow-[0_0_30px_rgba(234,179,8,0.1)]' : 'border-white/5'}
       ${isPreparing && !isCritical ? 'border-emerald-500/40' : 'hover:border-white/20'}`}
     >
       {/* Header - Identificação Rápida */}
       <div className={`p-6 border-b transition-colors duration-500 flex justify-between items-start ${isPreparing ? 'bg-emerald-500/5 border-emerald-500/10' : 'border-white/5'}`}>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className={`px-2 py-1 rounded-lg transition-colors ${isPreparing ? 'bg-emerald-500 text-black' : isOld ? 'bg-red-600 text-white' : 'bg-orange-500 text-black'}`}>
+            <div className={`px-2 py-1 rounded-lg transition-colors ${isPreparing ? 'bg-emerald-500 text-black' : isOld ? 'bg-red-600 text-white' : 'bg-yellow-500 text-black'}`}>
                 <Hash size={14} strokeWidth={4} />
             </div>
-            <span className={`text-3xl font-black italic leading-none tracking-tighter transition-colors ${isPreparing ? 'text-emerald-500' : isOld ? 'text-red-500' : 'text-orange-500'}`}>
+            <span className={`text-3xl font-black italic leading-none tracking-tighter transition-colors ${isPreparing ? 'text-emerald-500' : isOld ? 'text-red-500' : 'text-yellow-500'}`}>
               {order.numeroComanda}
             </span>
           </div>
@@ -76,13 +76,13 @@ const KitchenCard: React.FC<KitchenCardProps> = ({
           >
             {/* Checkbox estilizado */}
             <div className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all shrink-0
-              ${isChecked(idx) ? 'bg-emerald-500 border-emerald-500 text-black' : 'bg-zinc-800 border-white/10 text-zinc-600 group-hover/item:border-orange-500'}`}>
+              ${isChecked(idx) ? 'bg-emerald-500 border-emerald-500 text-black' : 'bg-zinc-800 border-white/10 text-zinc-600 group-hover/item:border-yellow-500'}`}>
               <Check size={18} strokeWidth={4} className={isChecked(idx) ? 'scale-100 opacity-100' : 'scale-50 opacity-0'} />
             </div>
 
             <div className="flex-1">
               <div className="flex items-baseline gap-3">
-                <span className={`font-black text-lg italic ${isChecked(idx) ? 'text-zinc-400' : 'text-orange-500'}`}>
+                <span className={`font-black text-lg italic ${isChecked(idx) ? 'text-zinc-400' : 'text-yellow-500'}`}>
                   {item.qtd}x
                 </span>
                 <p className={`text-base font-black leading-tight transition-all duration-300 uppercase italic flex items-center gap-2
@@ -98,7 +98,7 @@ const KitchenCard: React.FC<KitchenCardProps> = ({
               {item.addons && item.addons.length > 0 && !isChecked(idx) && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {item.addons.map((a, i) => (
-                    <span key={i} className="bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded text-[9px] font-black uppercase">
+                    <span key={i} className="bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2 py-0.5 rounded text-[9px] font-black uppercase">
                       + {a.name}
                     </span>
                   ))}
@@ -125,7 +125,7 @@ const KitchenCard: React.FC<KitchenCardProps> = ({
           className={`w-full py-6 rounded-[2rem] flex items-center justify-center gap-3 font-black uppercase tracking-[0.2em] text-xs transition-all active:scale-95
             ${isPreparing 
               ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
-              : 'bg-zinc-100 text-black hover:bg-orange-500 hover:text-white'}`}
+              : 'bg-zinc-100 text-black hover:bg-yellow-500 hover:text-white'}`}
         >
           {isPreparing ? (
             <><Check size={20} strokeWidth={3}/> FINALIZAR EXPEDIÇÃO</>
@@ -262,7 +262,7 @@ const Kitchen: React.FC = () => {
   const getTimerColor = (createdAt: number) => {
     const minutes = (Date.now() - createdAt) / 60000;
     if (minutes > 20) return 'text-red-500';
-    if (minutes > 15) return 'text-orange-500';
+    if (minutes > 15) return 'text-yellow-500';
     return 'text-emerald-500';
   };
 
@@ -284,8 +284,8 @@ const Kitchen: React.FC = () => {
           className="glass-card w-full max-w-md space-y-8"
         >
           <div className="text-center">
-            <div className="w-16 h-16 bg-orange-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-orange-accent" />
+            <div className="w-16 h-16 bg-yellow-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-yellow-accent" />
             </div>
             <h2 className="text-2xl font-bold">KDS - Cozinha</h2>
             <p className="text-zinc-500 text-sm mt-2">Área operacional para produção.</p>
@@ -322,7 +322,7 @@ const Kitchen: React.FC = () => {
       <header className="h-24 bg-zinc-900/80 border-b border-white/10 flex items-center px-8 justify-between backdrop-blur-3xl z-50">
          <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
-               <div className="p-3 bg-orange-500 rounded-2xl text-black shadow-[0_0_20px_rgba(249,115,22,0.4)]">
+               <div className="p-3 bg-yellow-500 rounded-2xl text-black shadow-[0_0_20px_rgba(234,179,8,0.4)]">
                  <Flame size={24} fill="currentColor" />
                </div>
                <div>
@@ -338,7 +338,7 @@ const Kitchen: React.FC = () => {
          <div className="flex items-center gap-4">
             <div className="px-6 py-3 bg-zinc-800/50 rounded-2xl border border-white/5 flex flex-col items-center">
                <span className="text-[7px] font-black uppercase tracking-widest text-zinc-500">Aguardando</span>
-               <span className="text-2xl font-black italic text-orange-500 leading-none">{orders.filter(o => o.status === OrderStatus.PENDING).length}</span>
+               <span className="text-2xl font-black italic text-yellow-500 leading-none">{orders.filter(o => o.status === OrderStatus.PENDING).length}</span>
             </div>
             
             <button 
@@ -394,7 +394,7 @@ const Kitchen: React.FC = () => {
 
         {loading && (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="animate-spin text-orange-500" size={48} />
+            <Loader2 className="animate-spin text-yellow-500" size={48} />
           </div>
         )}
       </main>

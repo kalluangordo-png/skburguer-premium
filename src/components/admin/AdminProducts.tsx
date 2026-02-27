@@ -217,7 +217,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
           >
             Gerenciar Tópicos
           </button>
-          <button onClick={openAddModal} className="w-full md:w-auto bg-white text-black hover:bg-orange-500 hover:text-white px-8 py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95">
+          <button onClick={openAddModal} className="w-full md:w-auto bg-white text-black hover:bg-yellow-500 hover:text-white px-8 py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 transition-all shadow-xl active:scale-95">
             <Plus size={20} /> Criar Novo Burger
           </button>
         </div>
@@ -226,20 +226,20 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
       {/* Grid de Produtos */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {products.map(prod => (
-          <div key={prod.id} className={`group bg-zinc-900/30 border-2 rounded-[2.8rem] overflow-hidden transition-all duration-500 flex flex-col backdrop-blur-sm ${prod.isPaused ? 'border-red-500/10 opacity-50' : 'border-white/5 hover:border-orange-500/40'}`}>
+          <div key={prod.id} className={`group bg-zinc-900/30 border-2 rounded-[2.8rem] overflow-hidden transition-all duration-500 flex flex-col backdrop-blur-sm ${prod.isPaused ? 'border-red-500/10 opacity-50' : 'border-white/5 hover:border-yellow-500/40'}`}>
             <div className="h-48 relative overflow-hidden">
               <img src={optimizeImage(prod.image, 600)} alt={prod.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
               
               <div className="absolute top-4 right-4 flex flex-col gap-2 translate-x-12 group-hover:translate-x-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <button onClick={() => openEditModal(prod)} className="p-3 bg-white text-black rounded-xl hover:bg-orange-500 hover:text-white transition-all shadow-xl"><Edit3 size={18} /></button>
+                <button onClick={() => openEditModal(prod)} className="p-3 bg-white text-black rounded-xl hover:bg-yellow-500 hover:text-white transition-all shadow-xl"><Edit3 size={18} /></button>
                 <button onClick={() => onToggleStatus(prod)} className={`p-3 rounded-xl transition-all shadow-xl ${prod.isPaused ? 'bg-emerald-500 text-white' : 'bg-zinc-800 text-white'}`}>
                   <Power size={18} />
                 </button>
               </div>
 
               <div className="absolute bottom-3 left-6">
-                <span className="text-[9px] font-black uppercase px-2 py-1 bg-black/60 text-orange-500 border border-orange-500/30 rounded-lg backdrop-blur-md">
+                <span className="text-[9px] font-black uppercase px-2 py-1 bg-black/60 text-yellow-500 border border-yellow-500/30 rounded-lg backdrop-blur-md">
                   {prod.category}
                 </span>
               </div>
@@ -253,7 +253,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
 
               <div className="mt-auto pt-4 border-t border-white/5 flex justify-between items-end">
                 <div className="flex flex-col">
-                  <span className="text-[14px] text-orange-500 font-black italic">{formatCurrency(prod.price)}</span>
+                  <span className="text-[14px] text-yellow-500 font-black italic">{formatCurrency(prod.price)}</span>
                   {prod.priceCombo && <span className="text-[10px] text-emerald-500 font-bold uppercase">Combo: {formatCurrency(prod.priceCombo)}</span>}
                 </div>
                 <button onClick={() => onDelete(prod.id)} className="p-2 text-zinc-700 hover:text-red-500 transition-colors">
@@ -276,7 +276,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
             <button 
                onClick={handleSaveConfig}
                disabled={isSavingConfig}
-               className="bg-orange-500 text-black px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-orange-400 transition-all shadow-xl shadow-orange-500/10"
+               className="bg-yellow-500 text-black px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-yellow-400 transition-all shadow-xl shadow-yellow-500/10"
             >
               {isSavingConfig ? 'Sincronizando...' : 'Salvar Estratégia'}
             </button>
@@ -288,11 +288,11 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
           <div className="space-y-6">
              <div className="flex justify-between items-center px-2">
                <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                 <Plus size={16} className="text-orange-500" /> Adicionais (Extras)
+                 <Plus size={16} className="text-yellow-500" /> Adicionais (Extras)
                </h4>
                <button 
                  onClick={() => setLocalConfig({...localConfig, addons: [...(localConfig.addons || []), { name: '', price: 0 }]})}
-                 className="text-[9px] font-black text-orange-500 uppercase border-b border-orange-500/30"
+                 className="text-[9px] font-black text-yellow-500 uppercase border-b border-yellow-500/30"
                >
                  + Adicionar Campo
                </button>
@@ -314,16 +314,16 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                     />
                     <div className="flex items-center gap-2 bg-zinc-900 px-3 py-2 rounded-xl border border-white/5">
                       <span className="text-[10px] text-zinc-600 font-black">R$</span>
-                      <input 
-                        type="number" 
-                        value={addon.price ?? 0} 
-                        onChange={e => {
-                          const newAddons = [...localConfig.addons];
-                          newAddons[index].price = parseFloat(e.target.value) || 0;
-                          setLocalConfig({...localConfig, addons: newAddons});
-                        }}
-                        className="bg-transparent border-none outline-none text-orange-500 font-black text-xs w-14"
-                      />
+                        <input 
+                          type="number" 
+                          value={addon.price ?? 0} 
+                          onChange={e => {
+                            const newAddons = [...localConfig.addons];
+                            newAddons[index].price = parseFloat(e.target.value) || 0;
+                            setLocalConfig({...localConfig, addons: newAddons});
+                          }}
+                          className="bg-transparent border-none outline-none text-yellow-500 font-black text-xs w-14"
+                        />
                     </div>
                     <button onClick={() => {
                       const newAddons = localConfig.addons.filter((_, i) => i !== index);
@@ -337,7 +337,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
           {/* Coluna de Sobremesas */}
           <div className="space-y-6">
             <h4 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-              <ChefHat size={16} className="text-orange-500" /> Gatilho de Sobremesa
+              <ChefHat size={16} className="text-yellow-500" /> Gatilho de Sobremesa
             </h4>
             <div className="bg-black/40 border border-white/5 p-8 rounded-[2.5rem] space-y-8">
                <div className="space-y-3">
@@ -354,14 +354,14 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                </div>
                
                <div className="space-y-3">
-                 <label className="text-[9px] font-black text-orange-500 uppercase px-1">Preço "Oferta de Última Hora" (No Carrinho)</label>
-                 <div className="bg-orange-500/10 border border-orange-500/20 p-5 rounded-2xl flex items-center justify-between">
-                   <span className="text-orange-500 font-black italic text-xl">{formatCurrency(localConfig.dessertOfferPrice || 0)}</span>
+                 <label className="text-[9px] font-black text-yellow-500 uppercase px-1">Preço "Oferta de Última Hora" (No Carrinho)</label>
+                 <div className="bg-yellow-500/10 border border-yellow-500/20 p-5 rounded-2xl flex items-center justify-between">
+                   <span className="text-yellow-500 font-black italic text-xl">{formatCurrency(localConfig.dessertOfferPrice || 0)}</span>
                    <input 
                      type="number" 
                      value={localConfig.dessertOfferPrice ?? 0} 
                      onChange={e => setLocalConfig({...localConfig, dessertOfferPrice: parseFloat(e.target.value)})}
-                     className="w-20 bg-transparent text-right outline-none text-orange-900 font-black"
+                     className="w-20 bg-transparent text-right outline-none text-yellow-900 font-black"
                    />
                  </div>
                  <p className="text-[8px] text-zinc-600 font-bold uppercase italic mt-2 text-center">Este preço cria o senso de urgência e benefício no checkout.</p>
@@ -405,7 +405,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                   <button 
                     onClick={handleSyncCategories}
                     disabled={isSyncing}
-                    className="text-[9px] font-black text-orange-500 uppercase flex items-center gap-1 hover:text-orange-400 disabled:opacity-50"
+                    className="text-[9px] font-black text-yellow-500 uppercase flex items-center gap-1 hover:text-yellow-400 disabled:opacity-50"
                   >
                     {isSyncing ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}
                     Sincronizar e Corrigir
@@ -470,7 +470,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                             setIsSubmitting(false);
                           }
                         }}
-                        className="text-[9px] font-black text-orange-500 uppercase flex items-center gap-1 hover:text-orange-400"
+                        className="text-[9px] font-black text-yellow-500 uppercase flex items-center gap-1 hover:text-yellow-400"
                       >
                         <Sparkles size={10} /> Sugerir com IA
                       </button>
@@ -479,7 +479,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                       type="text" 
                       value={formData.name ?? ''}
                       onChange={e => setFormData({...formData, name: e.target.value})}
-                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none uppercase"
+                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-yellow-500 outline-none uppercase"
                       placeholder="EX: SK CLASSIC BURGER"
                       required
                     />
@@ -493,7 +493,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                         step="0.01"
                         value={formData.price ?? 0}
                         onChange={e => setFormData({...formData, price: Number(e.target.value)})}
-                        className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none"
+                        className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-yellow-500 outline-none"
                         required
                       />
                     </div>
@@ -504,7 +504,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                         step="0.01"
                         value={formData.priceCombo ?? ''}
                         onChange={e => setFormData({...formData, priceCombo: e.target.value ? Number(e.target.value) : null})}
-                        className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none"
+                        className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-yellow-500 outline-none"
                       />
                     </div>
                   </div>
@@ -514,7 +514,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                     <select 
                       value={formData.category ?? ''}
                       onChange={e => setFormData({...formData, category: e.target.value})}
-                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none uppercase text-xs"
+                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-yellow-500 outline-none uppercase text-xs"
                       required
                     >
                       <option value="">Selecione um tópico</option>
@@ -538,7 +538,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
                     <textarea 
                       value={formData.description ?? ''}
                       onChange={e => setFormData({...formData, description: e.target.value})}
-                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-orange-500 outline-none h-32 resize-none"
+                      className="w-full bg-zinc-900 border border-white/5 rounded-2xl p-4 text-white font-bold focus:border-yellow-500 outline-none h-32 resize-none"
                       placeholder="Descreva os ingredientes..."
                     />
                   </div>
@@ -548,7 +548,7 @@ const AdminProducts: React.FC<AdminProductsProps> = ({
               <button 
                 type="submit" 
                 disabled={isSubmitting}
-                className="w-full bg-orange-500 text-black py-6 rounded-2xl font-black uppercase tracking-widest hover:bg-orange-400 transition-all shadow-xl shadow-orange-500/20 disabled:opacity-50"
+                className="w-full bg-yellow-500 text-black py-6 rounded-2xl font-black uppercase tracking-widest hover:bg-yellow-400 transition-all shadow-xl shadow-yellow-500/20 disabled:opacity-50"
               >
                 {isSubmitting ? <Loader2 className="animate-spin mx-auto" /> : 'Salvar Produto'}
               </button>

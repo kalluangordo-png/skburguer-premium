@@ -26,6 +26,7 @@ export interface StoreConfig {
   kitchenPassword?: string;
   addons: { name: string; price: number }[];
   categories?: string[];
+  promoText?: string;
 }
 
 export interface Product {

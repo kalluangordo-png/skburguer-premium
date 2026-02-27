@@ -64,22 +64,22 @@ const CartUpsell: React.FC<CartUpsellProps> = ({ cart, allProducts, config, onAd
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-orange-500/10 border border-orange-500/20 p-5 rounded-[2rem] flex items-center gap-4 relative overflow-hidden group"
+          className="bg-yellow-500/10 border border-yellow-500/20 p-5 rounded-[2rem] flex items-center gap-4 relative overflow-hidden group"
         >
-          <div className="absolute top-0 right-0 p-2 bg-orange-500 text-black text-[8px] font-black uppercase tracking-widest rounded-bl-xl">
+          <div className="absolute top-0 right-0 p-2 bg-yellow-500 text-black text-[8px] font-black uppercase tracking-widest rounded-bl-xl">
             Upgrade Pro
           </div>
-          <div className="w-14 h-14 bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500 shrink-0">
+          <div className="w-14 h-14 bg-yellow-500/20 rounded-2xl flex items-center justify-center text-yellow-500 shrink-0">
             <Flame size={28} />
           </div>
           <div className="flex-1">
             <h4 className="text-white font-black uppercase text-[10px] italic leading-tight">Bateu aquela fome de combo? 🍟🥤</h4>
             <p className="text-zinc-500 text-[9px] font-bold mt-0.5">Adicione Batata Frita Média + Refrigerante Lata por apenas + R$ 12,00.</p>
-            <p className="text-orange-500 font-black text-sm mt-0.5">+ {formatCurrency(12)}</p>
+            <p className="text-yellow-500 font-black text-sm mt-0.5">+ {formatCurrency(12)}</p>
           </div>
           <button 
             onClick={() => onUpgrade(burgerToUpgrade.id)}
-            className="bg-orange-500 text-black p-3 rounded-xl hover:bg-orange-400 transition-all active:scale-90 shadow-lg shadow-orange-500/20"
+            className="bg-yellow-500 text-black p-3 rounded-xl hover:bg-yellow-400 transition-all active:scale-90 shadow-lg shadow-yellow-500/20"
           >
             <Plus size={18} strokeWidth={3} />
           </button>

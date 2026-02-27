@@ -39,7 +39,7 @@ const SmartUpsell: React.FC<SmartUpsellProps> = ({ cart, allProducts, onAdd }) =
           model: 'gemini-3-flash-preview',
           contents: prompt,
           config: {
-            systemInstruction: "Você é o Sommelier de Smash Burgers da SK Burgers. Seu objetivo é aumentar o ticket médio sugerindo acompanhamentos lógicos. Responda apenas o JSON com o campo 'suggestedId'.",
+            systemInstruction: "Você é o Sommelier de Burgers da SK Burgers. Seu objetivo é aumentar o ticket médio sugerindo acompanhamentos lógicos. Responda apenas o JSON com o campo 'suggestedId'.",
             responseMimeType: "application/json",
             responseSchema: {
               type: Type.OBJECT,
@@ -81,8 +81,8 @@ const SmartUpsell: React.FC<SmartUpsellProps> = ({ cart, allProducts, onAdd }) =
 
   if (loading) {
     return (
-      <div className="bg-zinc-900/50 border border-orange-500/20 p-6 rounded-[2rem] flex items-center justify-center gap-3 animate-pulse">
-        <Loader2 size={18} className="animate-spin text-orange-500" />
+      <div className="bg-zinc-900/50 border border-yellow-500/20 p-6 rounded-[2rem] flex items-center justify-center gap-3 animate-pulse">
+        <Loader2 size={18} className="animate-spin text-yellow-500" />
         <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">IA harmonizando seu pedido...</span>
       </div>
     );
@@ -91,10 +91,10 @@ const SmartUpsell: React.FC<SmartUpsellProps> = ({ cart, allProducts, onAdd }) =
   if (!suggestion) return null;
 
   return (
-    <div className="bg-orange-500/5 border border-orange-500/20 p-6 rounded-[2.5rem] space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="bg-yellow-500/5 border border-yellow-500/20 p-6 rounded-[2.5rem] space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center gap-2">
-        <Sparkles size={16} className="text-orange-500" />
-        <h4 className="text-[10px] font-black uppercase text-orange-500 tracking-[0.2em]">Sugestão do Sommelier</h4>
+        <Sparkles size={16} className="text-yellow-500" />
+        <h4 className="text-[10px] font-black uppercase text-yellow-500 tracking-[0.2em]">Sugestão do Sommelier</h4>
       </div>
 
       <div className="flex items-center gap-4">
@@ -110,11 +110,11 @@ const SmartUpsell: React.FC<SmartUpsellProps> = ({ cart, allProducts, onAdd }) =
         <div className="flex-1">
           <h5 className="text-white font-black uppercase text-xs italic">{suggestion.name}</h5>
           <p className="text-zinc-500 text-[10px] font-bold mt-1 line-clamp-1">{suggestion.description}</p>
-          <p className="text-orange-500 font-black text-sm mt-1">{formatCurrency(suggestion.price)}</p>
+          <p className="text-yellow-500 font-black text-sm mt-1">{formatCurrency(suggestion.price)}</p>
         </div>
         <button 
           onClick={() => onAdd(suggestion)}
-          className="bg-orange-500 text-black p-3 rounded-xl hover:bg-orange-400 transition-all active:scale-90 shadow-lg shadow-orange-500/20"
+          className="bg-yellow-500 text-black p-3 rounded-xl hover:bg-yellow-400 transition-all active:scale-90 shadow-lg shadow-yellow-500/20"
         >
           <Plus size={20} strokeWidth={3} />
         </button>

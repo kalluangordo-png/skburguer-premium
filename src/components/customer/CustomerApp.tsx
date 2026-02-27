@@ -33,7 +33,7 @@ const CustomerApp: React.FC = () => {
   if (showMenu) return <Menu onBack={() => setShowMenu(false)} config={storeConfig} />;
 
   return (
-    <div className="min-h-screen bg-black pb-32 selection:bg-orange-500/30 font-sans selection:text-white">
+    <div className="min-h-screen bg-black pb-32 selection:bg-yellow-500/30 font-sans selection:text-white">
       {/* Botão Voltar Estratégico */}
       <div className="fixed top-8 left-8 z-[100] animate-in fade-in duration-1000">
         <button 
@@ -56,7 +56,7 @@ const CustomerApp: React.FC = () => {
       {/* Hero Section com Parallax Suave */}
       <div className="relative h-[65vh] overflow-hidden">
         <img 
-          src="https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=1200" 
+          src="https://i.postimg.cc/hGffpKz5/ewto5b4bl3xrdpdswhi5.jpg" 
           className="w-full h-full object-cover opacity-70 scale-105" 
           alt="SK Burgers Premium" 
           referrerPolicy="no-referrer"
@@ -65,21 +65,26 @@ const CustomerApp: React.FC = () => {
         
         <div className="absolute bottom-12 left-6 right-6 md:left-20">
            <div className="flex items-center gap-3 mb-6 animate-in slide-in-from-left duration-700">
-              <div className="bg-orange-500 px-4 py-1.5 rounded-xl text-[10px] font-black text-black uppercase tracking-widest shadow-2xl shadow-orange-500/40 flex items-center gap-2">
+              <div className="bg-yellow-500 px-4 py-1.5 rounded-xl text-[10px] font-black text-black uppercase tracking-widest shadow-2xl shadow-yellow-500/40 flex items-center gap-2">
                 <Flame size={14} fill="black" /> Best in Manaus
               </div>
               <div className="bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-xl text-[10px] font-black text-white uppercase flex items-center gap-2 border border-white/10">
-                <Star size={12} className="fill-orange-500 text-orange-500" /> 4.9
+                <Star size={12} className="fill-yellow-500 text-yellow-500" /> 4.9
               </div>
            </div>
            
-           <h1 className="text-7xl md:text-9xl font-black text-white uppercase italic tracking-tighter leading-[0.85] mb-6 animate-in slide-in-from-bottom duration-1000">
-             SK<br/>BURGERS
-           </h1>
+            <div className="flex items-center gap-3 mb-6 animate-in slide-in-from-bottom duration-1000">
+              <div className="bg-zinc-950 border-2 border-yellow-500 w-14 h-14 md:w-32 md:h-32 rounded-2xl flex items-center justify-center shadow-[0_0_20px_-5px_rgba(234,179,8,0.3)] rotate-3 shrink-0">
+                <span className="text-2xl md:text-7xl font-black text-yellow-500 italic tracking-tighter">SK</span>
+              </div>
+              <h1 className="text-5xl sm:text-7xl md:text-9xl font-black text-white uppercase italic tracking-tighter leading-[0.85] break-words">
+                BURGERS
+              </h1>
+           </div>
            
            <div className="flex flex-wrap items-center gap-6 animate-in fade-in duration-1000 delay-500">
               <p className="text-zinc-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 bg-zinc-900/50 p-2 rounded-lg">
-                <MapPin size={14} className="text-orange-500" /> Nova Cidade
+                <MapPin size={14} className="text-yellow-500" /> Nova Cidade
               </p>
               <div className="flex items-center gap-3">
                 <div className={`w-2.5 h-2.5 rounded-full ${storeConfig.aberta ? 'bg-emerald-500 animate-pulse shadow-[0_0_15px_#10b981]' : 'bg-red-500'}`} />
@@ -93,16 +98,16 @@ const CustomerApp: React.FC = () => {
 
       <div className="max-w-xl mx-auto px-8 -mt-8 relative z-10 space-y-12">
         {/* Cards de Status Rápido */}
-        <div className="grid grid-cols-2 gap-4">
-           <div className="bg-zinc-900/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 space-y-3 shadow-2xl group hover:border-orange-500/20 transition-all">
-              <Clock className="text-orange-500 group-hover:scale-110 transition-transform" />
-              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Tempo Médio</p>
-              <p className="font-black text-white italic text-2xl tracking-tighter">25-40 MIN</p>
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
+           <div className="bg-zinc-900/80 backdrop-blur-xl p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-white/5 space-y-2 md:space-y-3 shadow-2xl group hover:border-yellow-500/20 transition-all">
+              <Clock className="text-yellow-500 group-hover:scale-110 transition-transform w-5 h-5 md:w-6 md:h-6" />
+              <p className="text-[8px] md:text-[9px] font-black text-zinc-500 uppercase tracking-widest">Tempo Médio</p>
+              <p className="font-black text-white italic text-lg md:text-2xl tracking-tighter">25-40 MIN</p>
            </div>
-           <div className="bg-zinc-900/80 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 space-y-3 shadow-2xl group hover:border-orange-500/20 transition-all">
-              <Bike className="text-orange-500 group-hover:scale-110 transition-transform" />
-              <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Taxa de Entrega</p>
-              <p className="font-black text-white italic text-2xl tracking-tighter">SOB CONSULTA</p>
+           <div className="bg-zinc-900/80 backdrop-blur-xl p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-white/5 space-y-2 md:space-y-3 shadow-2xl group hover:border-yellow-500/20 transition-all">
+              <Bike className="text-yellow-500 group-hover:scale-110 transition-transform w-5 h-5 md:w-6 md:h-6" />
+              <p className="text-[8px] md:text-[9px] font-black text-zinc-500 uppercase tracking-widest">Taxa de Entrega</p>
+              <p className="font-black text-white italic text-lg md:text-2xl tracking-tighter leading-tight">SOB CONSULTA</p>
            </div>
         </div>
 
@@ -113,7 +118,7 @@ const CustomerApp: React.FC = () => {
               disabled={!storeConfig.aberta}
               className={`w-full py-8 rounded-[2.5rem] font-black text-xl uppercase tracking-[0.2em] flex items-center justify-center gap-4 transition-all active:scale-95 shadow-2xl
                 ${storeConfig.aberta 
-                  ? 'bg-orange-500 text-black shadow-orange-500/20 hover:bg-orange-400 hover:-translate-y-1' 
+                  ? 'bg-yellow-500 text-black shadow-yellow-500/20 hover:bg-yellow-400 hover:-translate-y-1' 
                   : 'bg-zinc-800 text-zinc-600 cursor-not-allowed opacity-50'}`}
           >
              {storeConfig.aberta ? (

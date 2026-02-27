@@ -77,7 +77,7 @@ const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products }) => {
           <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.3em] mt-1">Cozinha em Tempo Real • SK BURGERS</p>
         </div>
         <div className="bg-zinc-900/50 border border-white/5 px-6 py-3 rounded-2xl flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></div>
+            <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
             <span className="text-[10px] font-black uppercase text-white">{activeOrders.length} EM ABERTO</span>
         </div>
       </header>
@@ -90,7 +90,7 @@ const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products }) => {
 
           return (
             <div key={order.id} className={`bg-zinc-900 border-2 rounded-[2.5rem] flex flex-col overflow-hidden transition-all duration-500 ${isLate ? 'border-red-600/50 bg-red-950/10' : 'border-white/5'}`}>
-              <div className={`p-6 border-b border-white/5 flex justify-between items-start ${order.status === OrderStatus.PREPARING ? 'bg-orange-500/5' : 'bg-black/20'}`}>
+              <div className={`p-6 border-b border-white/5 flex justify-between items-start ${order.status === OrderStatus.PREPARING ? 'bg-yellow-500/5' : 'bg-black/20'}`}>
                 <div>
                    <div className="flex items-center gap-2">
                      <span className="text-2xl font-black text-white italic leading-none">#{order.numeroComanda}</span>
@@ -107,7 +107,7 @@ const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products }) => {
                 {order.itens.map((item, idx) => (
                   <div key={idx} className="space-y-1">
                     <div className="flex items-start gap-3">
-                      <div className="bg-orange-500 text-black w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
+                      <div className="bg-yellow-500 text-black w-7 h-7 rounded-lg flex items-center justify-center font-black text-xs shrink-0">
                         {item.qtd}
                       </div>
                       <div className="flex-1">
@@ -121,7 +121,7 @@ const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products }) => {
                         {item.addons && item.addons.length > 0 && (
                           <div className="mt-1.5 flex flex-wrap gap-1">
                             {item.addons.map((addon, i) => (
-                              <span key={i} className="text-[8px] bg-white/5 text-orange-500 border border-orange-500/20 px-2 py-0.5 rounded-md uppercase font-black">
+                              <span key={i} className="text-[8px] bg-white/5 text-yellow-500 border border-yellow-500/20 px-2 py-0.5 rounded-md uppercase font-black">
                                 + {addon.name}
                               </span>
                             ))}
@@ -153,7 +153,7 @@ const AdminKDS: React.FC<AdminKDSProps> = ({ orders, products }) => {
                   onClick={() => order.status === OrderStatus.PENDING ? handleStartProduction(order) : handleFinishProduction(order.id)} 
                   className={`w-full py-5 rounded-[1.8rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl
                     ${order.status === OrderStatus.PENDING 
-                      ? 'bg-white text-black hover:bg-orange-500 hover:text-white' 
+                      ? 'bg-white text-black hover:bg-yellow-500 hover:text-white' 
                       : 'bg-emerald-500 text-black shadow-emerald-500/20'}`}
                 >
                   {order.status === OrderStatus.PENDING ? (

@@ -62,7 +62,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, initialValue
         relative flex flex-col items-center justify-center w-full h-64 
         border-2 border-dashed rounded-[2.5rem] cursor-pointer 
         transition-all duration-700 overflow-hidden shadow-2xl
-        ${preview ? 'border-orange-500/20 bg-black' : 'border-zinc-800 bg-zinc-900/40 hover:border-orange-500/40'}
+        ${preview ? 'border-yellow-500/20 bg-black' : 'border-zinc-800 bg-zinc-900/40 hover:border-yellow-500/40'}
       `}>
         
         {preview ? (
@@ -79,7 +79,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, initialValue
               {loading ? (
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative">
-                    <Loader2 className="animate-spin text-orange-500" size={40} />
+                    <Loader2 className="animate-spin text-yellow-500" size={40} />
                     <UploadCloud className="absolute inset-0 m-auto text-white/50" size={16} />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white animate-pulse">Processando Pixel...</span>
@@ -104,8 +104,8 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, initialValue
           </>
         ) : (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <div className="w-20 h-20 bg-zinc-800/50 rounded-[2rem] flex items-center justify-center mb-6 group-hover:bg-orange-500/20 group-hover:rotate-12 transition-all duration-500 border border-white/5">
-              <UploadCloud className="text-zinc-600 group-hover:text-orange-500" size={32} />
+            <div className="w-20 h-20 bg-zinc-800/50 rounded-[2rem] flex items-center justify-center mb-6 group-hover:bg-yellow-500/20 group-hover:rotate-12 transition-all duration-500 border border-white/5">
+              <UploadCloud className="text-zinc-600 group-hover:text-yellow-500" size={32} />
             </div>
             <h3 className="text-white font-black text-xs uppercase tracking-widest mb-2">Upload de Produto</h3>
             <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest max-w-[150px] leading-relaxed">
@@ -125,7 +125,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ onUploadSuccess, initialValue
 
       {/* Dica técnica flutuante */}
       <div className="mt-4 flex items-center gap-2 px-4">
-        <div className="h-1 w-1 bg-orange-500 rounded-full" />
+        <div className="h-1 w-1 bg-yellow-500 rounded-full" />
         <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">A compressão automática mantém a nitidez e acelera o app</p>
       </div>
     </div>

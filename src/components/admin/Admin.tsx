@@ -117,8 +117,8 @@ const Admin: React.FC = () => {
           className="glass-card w-full max-w-md space-y-8"
         >
           <div className="text-center">
-            <div className="w-16 h-16 bg-orange-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-orange-accent" />
+            <div className="w-16 h-16 bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-yellow-500" />
             </div>
             <h2 className="text-2xl font-bold">Acesso Administrativo</h2>
             <p className="text-zinc-500 text-sm mt-2">Área restrita para gestores.</p>
@@ -150,7 +150,7 @@ const Admin: React.FC = () => {
   if (loading && isAuthenticated) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <Loader2 className="animate-spin text-orange-500" size={40} />
+        <Loader2 className="animate-spin text-yellow-500" size={40} />
       </div>
     );
   }
@@ -159,7 +159,7 @@ const Admin: React.FC = () => {
     <div className="min-h-screen bg-zinc-950 p-4 md:p-6">
       <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div className="flex items-center gap-3">
-          <LayoutDashboard className="text-orange-accent w-8 h-8" />
+          <LayoutDashboard className="text-yellow-500 w-8 h-8" />
           <h1 className="text-xl md:text-2xl font-bold">Painel Administrativo</h1>
         </div>
         
@@ -176,7 +176,7 @@ const Admin: React.FC = () => {
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
                 "px-4 md:px-6 py-2 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 whitespace-nowrap",
-                activeTab === tab.id ? "bg-orange-500 text-black" : "text-zinc-500 hover:text-zinc-300"
+                activeTab === tab.id ? "bg-yellow-500 text-black" : "text-zinc-500 hover:text-zinc-300"
               )}
             >
               <tab.icon size={14} /> {tab.label}
@@ -230,8 +230,8 @@ const Admin: React.FC = () => {
         </>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
-          <div className="w-20 h-20 bg-orange-500/10 rounded-full flex items-center justify-center">
-            <Settings className="w-10 h-10 text-orange-500 animate-spin-slow" />
+          <div className="w-20 h-20 bg-yellow-500/10 rounded-full flex items-center justify-center">
+            <Settings className="w-10 h-10 text-yellow-500 animate-spin-slow" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">Sistema Não Inicializado</h2>

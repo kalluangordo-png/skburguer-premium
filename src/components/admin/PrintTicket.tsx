@@ -19,7 +19,7 @@ const PrintTicket: React.FC<PrintTicketProps> = ({ order }) => {
         {/* Cabeçalho Industrial */}
         <div className="text-center border-b-2 border-black pb-2 mb-2">
           <h1 className="text-[18px] font-black uppercase tracking-tighter">SK BURGERS</h1>
-          <p className="text-[9px] uppercase font-bold">Manaus - Premium Smash</p>
+          <p className="text-[9px] uppercase font-bold">Manaus - Premium Burgers</p>
           <div className="flex justify-between mt-2 text-[10px] font-bold border-y border-black py-1">
             <span>#{order.numeroComanda}</span>
             <span>{date.toLocaleDateString('pt-BR')} {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>

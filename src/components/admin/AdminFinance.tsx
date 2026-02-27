@@ -68,7 +68,7 @@ const AdminFinance: React.FC<Props> = ({ orders, products = [] }) => {
             <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Bruto Total</p>
             <h4 className="text-2xl font-black italic text-white">{formatCurrency(stats.gross)}</h4>
           </div>
-          <div className="bg-orange-500 p-8 rounded-[2.5rem] text-black shadow-lg shadow-orange-500/20">
+          <div className="bg-yellow-500 p-8 rounded-[2.5rem] text-black shadow-lg shadow-yellow-500/20">
             <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Lucro Líquido (Real)</p>
             <h4 className="text-2xl font-black italic">{formatCurrency(stats.netProfit)}</h4>
           </div>
@@ -87,7 +87,7 @@ const AdminFinance: React.FC<Props> = ({ orders, products = [] }) => {
         <div className="glass p-10 rounded-[3rem]">
           <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-3">
-              <Award className="text-orange-500" size={24} />
+              <Award className="text-yellow-500" size={24} />
               <h3 className="text-white font-black text-xl uppercase italic tracking-tighter">Ranking de Lucratividade</h3>
             </div>
             <Calculator size={20} className="text-zinc-700" />
@@ -95,9 +95,9 @@ const AdminFinance: React.FC<Props> = ({ orders, products = [] }) => {
           
           <div className="space-y-6">
             {stats.topProducts.map((p, idx) => (
-              <div key={idx} className="flex items-center justify-between p-6 bg-black/40 rounded-[2rem] border border-white/5 group hover:border-orange-500/30 transition-all">
+              <div key={idx} className="flex items-center justify-between p-6 bg-black/40 rounded-[2rem] border border-white/5 group hover:border-yellow-500/30 transition-all">
                 <div className="flex items-center gap-5">
-                  <span className="text-4xl font-black italic text-zinc-800 group-hover:text-orange-500/20 transition-colors">0{idx + 1}</span>
+                  <span className="text-4xl font-black italic text-zinc-800 group-hover:text-yellow-500/20 transition-colors">0{idx + 1}</span>
                   <div>
                     <h4 className="text-white font-black uppercase text-sm italic">{p.name}</h4>
                     <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-1">{p.sales} vendas • Margem: {p.margin.toFixed(1)}%</p>
@@ -116,7 +116,7 @@ const AdminFinance: React.FC<Props> = ({ orders, products = [] }) => {
         <div className="glass p-10 rounded-[3rem] flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-10">
-              <PieChart className="text-orange-500" size={24} />
+              <PieChart className="text-yellow-500" size={24} />
               <h3 className="text-white font-black text-xl uppercase italic tracking-tighter">Saúde do Caixa</h3>
             </div>
             <div className="space-y-4">
@@ -131,8 +131,8 @@ const AdminFinance: React.FC<Props> = ({ orders, products = [] }) => {
             </div>
           </div>
 
-          <div className="mt-8 p-6 bg-orange-500/10 border border-orange-500/20 rounded-3xl">
-            <div className="flex items-center gap-2 text-orange-500 mb-2">
+          <div className="mt-8 p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-3xl">
+            <div className="flex items-center gap-2 text-yellow-500 mb-2">
               <TrendingUp size={18} />
               <span className="text-[10px] font-black uppercase tracking-widest">Insight de Gestão</span>
             </div>

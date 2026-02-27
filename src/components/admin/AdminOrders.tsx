@@ -95,7 +95,7 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ orders }) => {
               <div className="flex-1 text-center md:text-left">
                 <div className="flex items-center justify-center md:justify-start gap-2">
                   <h4 className="text-lg font-black text-zinc-200 uppercase italic tracking-tight">{order.cliente.nome}</h4>
-                  {(order.cliente as any).totalPurchases >= 5 && <Star size={16} className="text-orange-500 fill-orange-500" />}
+                  {(order.cliente as any).totalPurchases >= 5 && <Star size={16} className="text-yellow-500 fill-yellow-500" />}
                 </div>
                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">
                   {order.cliente.bairro || 'RETIRADA'} • {order.itens.length} ITENS
@@ -106,7 +106,7 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ orders }) => {
               <div className="flex flex-col items-center md:items-end min-w-[150px]">
                 <div className="text-xl font-black text-white italic">{formatCurrency(order.total)}</div>
                 <span className={`mt-2 px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                  order.status === OrderStatus.READY ? 'bg-orange-500 text-black' : 'bg-zinc-800 text-zinc-400'
+                  order.status === OrderStatus.READY ? 'bg-yellow-500 text-black' : 'bg-zinc-800 text-zinc-400'
                 }`}>
                   {order.status.replace('_', ' ')}
                 </span>
@@ -129,7 +129,7 @@ const AdminOrders: React.FC<AdminOrdersProps> = ({ orders }) => {
                   <button 
                     onClick={() => handleUpdateStatus(order.id, OrderStatus.DELIVERING, "Saiu para entrega!")}
                     disabled={!!processingId}
-                    className="bg-orange-500 hover:bg-orange-400 text-black px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-orange-500/20 active:scale-95"
+                    className="bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-yellow-500/20 active:scale-95"
                   >
                     {processingId === order.id ? <Loader2 className="animate-spin" size={18}/> : 'Despachar'}
                   </button>

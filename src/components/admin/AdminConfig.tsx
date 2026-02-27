@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Save, Loader2, DatabaseBackup, Rocket, CloudRain, AlertOctagon, Power, 
-  Target, Hash, IceCream, Lock, Eye, EyeOff, X, MessageSquare 
+  Target, Hash, IceCream, Lock, Eye, EyeOff, X, MessageSquare, Flame 
 } from 'lucide-react';
 import { StoreConfig } from '../../types';
 import { useToast } from '../ToastContext';
@@ -57,7 +57,7 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
               type="button"
               onClick={handleSeed}
               disabled={isSeeding}
-              className="flex-1 md:flex-none bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-black px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-orange-500/20 disabled:opacity-30"
+              className="flex-1 md:flex-none bg-yellow-500/10 hover:bg-yellow-500 text-yellow-500 hover:text-black px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-yellow-500/20 disabled:opacity-30"
             >
               {isSeeding ? <Loader2 size={14} className="animate-spin" /> : <DatabaseBackup size={14}/>} Resetar Base
             </button>
@@ -116,8 +116,8 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-3">
             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Meta Diária (R$)</label>
-            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-orange-500/50 transition-all">
-              <Target size={20} className="text-orange-500" />
+            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-yellow-500/50 transition-all">
+              <Target size={20} className="text-yellow-500" />
               <input 
                 type="number" 
                 value={localConfig.dailyGoal ?? 0} 
@@ -128,8 +128,8 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
           </div>
           <div className="space-y-3">
             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Chave PIX</label>
-            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-orange-500/50 transition-all">
-              <Hash size={20} className="text-orange-500" />
+            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-yellow-500/50 transition-all">
+              <Hash size={20} className="text-yellow-500" />
               <input 
                 type="text" 
                 value={localConfig.pixKey ?? ''} 
@@ -141,14 +141,27 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
           </div>
           <div className="space-y-3">
             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">WhatsApp da Loja</label>
-            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-orange-500/50 transition-all">
-              <MessageSquare size={20} className="text-orange-500" />
+            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-yellow-500/50 transition-all">
+              <MessageSquare size={20} className="text-yellow-500" />
               <input 
                 type="text" 
                 value={localConfig.whatsappNumber ?? ''} 
                 onChange={e => setLocalConfig({...localConfig, whatsappNumber: e.target.value.replace(/\D/g, '')})}
                 className="bg-transparent border-none outline-none text-white font-bold w-full text-sm" 
                 placeholder="5592999999999"
+              />
+            </div>
+          </div>
+          <div className="space-y-3 md:col-span-2">
+            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-2">Promoção do Dia (Banner no Cardápio)</label>
+            <div className="flex items-center gap-4 bg-zinc-900 border border-white/5 p-4 rounded-2xl focus-within:border-yellow-500/50 transition-all">
+              <Flame size={20} className="text-yellow-500" />
+              <input 
+                type="text" 
+                value={localConfig.promoText ?? ''} 
+                onChange={e => setLocalConfig({...localConfig, promoText: e.target.value})}
+                className="bg-transparent border-none outline-none text-white font-bold w-full text-sm" 
+                placeholder="EX: COMBO SK + COCA POR R$ 35,00"
               />
             </div>
           </div>
@@ -223,7 +236,7 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
               <div key={idx} className="bg-zinc-900 border border-white/5 p-4 rounded-3xl flex items-center justify-between group">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black text-white uppercase italic">{addon.name}</span>
-                  <span className="text-[9px] font-bold text-orange-500 uppercase">+ {formatCurrency(addon.price)}</span>
+                  <span className="text-[9px] font-bold text-yellow-500 uppercase">+ {formatCurrency(addon.price)}</span>
                 </div>
                 <button 
                   type="button"
@@ -246,7 +259,7 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
                 type="text" 
                 id="newAddonName"
                 placeholder="EX: BACON" 
-                className="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-white text-xs outline-none focus:border-orange-500/50 uppercase italic font-bold"
+                className="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-white text-xs outline-none focus:border-yellow-500/50 uppercase italic font-bold"
               />
             </div>
             <div className="w-full md:w-32 space-y-1">
@@ -256,7 +269,7 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
                 id="newAddonPrice"
                 placeholder="0.00" 
                 step="0.50"
-                className="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-white text-xs outline-none focus:border-orange-500/50 font-bold"
+                className="w-full bg-zinc-900 border border-white/5 p-3 rounded-xl text-white text-xs outline-none focus:border-yellow-500/50 font-bold"
               />
             </div>
             <button 
@@ -283,7 +296,7 @@ const AdminConfig: React.FC<AdminConfigProps> = ({ config, onSave, onFixAddress,
         <button 
           type="submit" 
           disabled={isSaving}
-          className="w-full bg-orange-500 text-black py-5 rounded-[2rem] font-black flex items-center justify-center gap-3 uppercase tracking-widest hover:bg-orange-400 active:scale-95 transition-all shadow-xl shadow-orange-500/10 disabled:opacity-50"
+          className="w-full bg-yellow-500 text-black py-5 rounded-[2rem] font-black flex items-center justify-center gap-3 uppercase tracking-widest hover:bg-yellow-400 active:scale-95 transition-all shadow-xl shadow-yellow-500/10 disabled:opacity-50"
         >
           {isSaving ? <Loader2 className="animate-spin" /> : <Save size={20}/>}
           <span>Salvar Configurações</span>
